@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Bitbucket MCP Server",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/index.js",
+      "console": "integratedTerminal",
+      "env": {
+        "BITBUCKET_USERNAME": "${input:bitbucketUsername}",
+        "BITBUCKET_APP_PASSWORD": "${input:bitbucketAppPassword}",
+        "NODE_ENV": "development"
+      },
+      "preLaunchTask": "Build Bitbucket MCP Server",
+      "outFiles": ["${workspaceFolder}/build/**/*.js"],
+      "sourceMaps": true,
+      "stopOnEntry": false,
+      "args": []
+    },
+    {
+      "name": "Debug TypeScript Source",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/index.ts",
+      "console": "integratedTerminal",
+      "env": {
+        "BITBUCKET_USERNAME": "${input:bitbucketUsername}",
+        "BITBUCKET_APP_PASSWORD": "${input:bitbucketAppPassword}",
+        "NODE_ENV": "development"
+      },
+      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "stopOnEntry": false,
+      "args": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "bitbucketUsername",
+      "description": "Enter your Bitbucket username",
+      "default": "",
+      "type": "promptString"
+    },
+    {
+      "id": "bitbucketAppPassword",
+      "description": "Enter your Bitbucket App Password",
+      "default": "",
+      "type": "promptString"
+    }
+  ]
+}
