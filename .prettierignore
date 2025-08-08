@@ -1,0 +1,7 @@
+build/
+node_modules/
+*.md
+*.json
+*.yaml
+*.yml
+.env*
