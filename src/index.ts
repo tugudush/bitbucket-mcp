@@ -12,6 +12,138 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 // Bitbucket API configuration
 const BITBUCKET_API_BASE = 'https://api.bitbucket.org/2.0';
 
+// TypeScript interfaces for Bitbucket API responses
+interface BitbucketUser {
+  display_name: string;
+  username: string;
+  account_id: string;
+  type: string;
+  website?: string;
+  location?: string;
+  created_on: string;
+}
+
+interface BitbucketRepository {
+  full_name: string;
+  name: string;
+  description?: string;
+  language?: string;
+  size?: number;
+  created_on: string;
+  updated_on: string;
+  is_private: boolean;
+  parent?: BitbucketRepository;
+  forks_count?: number;
+  watchers_count?: number;
+  website?: string;
+  links?: {
+    clone?: Array<{ name: string; href: string }>;
+  };
+}
+
+interface BitbucketBranch {
+  name: string;
+}
+
+interface BitbucketPullRequest {
+  id: number;
+  title: string;
+  state: string;
+  author: BitbucketUser;
+  created_on: string;
+  updated_on: string;
+  description?: string;
+  source: { branch: BitbucketBranch };
+  destination: { branch: BitbucketBranch };
+  reviewers?: BitbucketUser[];
+}
+
+interface BitbucketComment {
+  user: BitbucketUser;
+  created_on: string;
+  content?: {
+    raw?: string;
+    markup?: string;
+  };
+  inline?: {
+    path: string;
+    to?: number;
+    from?: number;
+  };
+  parent?: {
+    id: number;
+  };
+}
+
+interface BitbucketActivity {
+  update?: {
+    date: string;
+    author: BitbucketUser;
+    state?: string;
+    title?: string;
+    reviewers?: BitbucketUser[];
+  };
+  comment?: BitbucketComment;
+  approval?: {
+    state: string;
+  };
+}
+
+interface BitbucketIssue {
+  id: number;
+  title: string;
+  state: string;
+  kind: string;
+  priority: string;
+  reporter: BitbucketUser;
+  assignee?: BitbucketUser;
+  created_on: string;
+  updated_on: string;
+  content?: {
+    raw?: string;
+  };
+}
+
+interface BitbucketCommit {
+  hash: string;
+  message: string;
+  date: string;
+  author: {
+    user?: BitbucketUser;
+    raw: string;
+  };
+}
+
+interface BitbucketBranchWithTarget {
+  name: string;
+  target: {
+    hash: string;
+    date: string;
+  };
+}
+
+interface BitbucketSearchResult {
+  file: {
+    path: string;
+  };
+  line_number: number;
+  content_match_text: string;
+}
+
+interface BitbucketWorkspace {
+  name: string;
+  slug: string;
+  uuid: string;
+  type: string;
+  created_on: string;
+}
+
+interface BitbucketApiResponse<T> {
+  values: T[];
+  page?: number;
+  size: number;
+}
+
 // Input schemas for Bitbucket tools
 const GetRepositorySchema = z.object({
   workspace: z.string().describe('The workspace or username'),
@@ -132,10 +264,10 @@ const GetWorkspaceSchema = z.object({
 });
 
 // Helper function to make authenticated requests to Bitbucket API
-async function makeRequest(
+async function makeRequest<T = unknown>(
   url: string,
   options: RequestInit = {}
-): Promise<any> {
+): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'User-Agent': 'bitbucket-mcp-server/1.0.0',
@@ -267,7 +399,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       case 'bb_get_repository': {
         const parsed = GetRepositorySchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}`;
-        const repo = await makeRequest(url);
+        const repo = await makeRequest<BitbucketRepository>(url);
 
         return {
           content: [
@@ -284,7 +416,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
                 `Fork: ${repo.parent ? 'Yes' : 'No'}\n` +
                 `Forks: ${repo.forks_count || 0}\n` +
                 `Watchers: ${repo.watchers_count || 0}\n` +
-                `Clone URL (HTTPS): ${repo.links?.clone?.find((link: any) => link.name === 'https')?.href}\n` +
+                `Clone URL (HTTPS): ${repo.links?.clone?.find(link => link.name === 'https')?.href}\n` +
                 `Website: ${repo.website || 'None'}`,
             },
           ],
@@ -299,11 +431,12 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}?${params}`;
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketRepository>>(url);
 
         const repoList = data.values
           .map(
-            (repo: any) =>
+            (repo: BitbucketRepository) =>
               `- ${repo.name} (${repo.full_name})\n` +
               `  Description: ${repo.description || 'No description'}\n` +
               `  Language: ${repo.language || 'Not specified'}\n` +
@@ -334,11 +467,12 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests?${params}`;
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketPullRequest>>(url);
 
         const prList = data.values
           .map(
-            (pr: any) =>
+            (pr: BitbucketPullRequest) =>
               `- #${pr.id}: ${pr.title}\n` +
               `  Author: ${pr.author.display_name}\n` +
               `  State: ${pr.state}\n` +
@@ -364,7 +498,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       case 'bb_get_pull_request': {
         const parsed = GetPullRequestSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}`;
-        const pr = await makeRequest(url);
+        const pr = await makeRequest<BitbucketPullRequest>(url);
 
         return {
           content: [
@@ -377,7 +511,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
                 `Source: ${pr.source.branch.name} → ${pr.destination.branch.name}\n` +
                 `Created: ${pr.created_on}\n` +
                 `Updated: ${pr.updated_on}\n` +
-                `Reviewers: ${pr.reviewers?.map((r: any) => r.display_name).join(', ') || 'None'}\n\n` +
+                `Reviewers: ${pr.reviewers?.map(r => r.display_name).join(', ') || 'None'}\n\n` +
                 `Description:\n${pr.description || 'No description'}`,
             },
           ],
@@ -392,11 +526,12 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/comments?${params}`;
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketComment>>(url);
 
         const commentList = data.values
           .map(
-            (comment: any) =>
+            (comment: BitbucketComment) =>
               `- Comment by ${comment.user.display_name} (${comment.created_on}):\n` +
               `  ${comment.content?.raw || comment.content?.markup || 'No content'}\n` +
               (comment.inline
@@ -429,10 +564,11 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/activity?${params}`;
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketActivity>>(url);
 
         const activityList = data.values
-          .map((activity: any) => {
+          .map((activity: BitbucketActivity) => {
             let activityText = `- ${activity.update?.date || activity.comment?.created_on || 'Unknown date'}`;
 
             if (activity.update) {
@@ -445,7 +581,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
               }
               if (activity.update.reviewers) {
                 const reviewers = activity.update.reviewers
-                  .map((r: any) => r.display_name)
+                  .map(r => r.display_name)
                   .join(', ');
                 activityText += ` updated reviewers: ${reviewers}`;
               }
@@ -487,11 +623,12 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/issues?${params}`;
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketIssue>>(url);
 
         const issueList = data.values
           .map(
-            (issue: any) =>
+            (issue: BitbucketIssue) =>
               `- #${issue.id}: ${issue.title}\n` +
               `  Reporter: ${issue.reporter.display_name}\n` +
               `  State: ${issue.state}\n` +
@@ -518,7 +655,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       case 'bb_get_issue': {
         const parsed = GetIssueSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/issues/${parsed.issue_id}`;
-        const issue = await makeRequest(url);
+        const issue = await makeRequest<BitbucketIssue>(url);
 
         return {
           content: [
@@ -552,11 +689,12 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         }
         url += `?${params}`;
 
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketCommit>>(url);
 
         const commitList = data.values
           .map(
-            (commit: any) =>
+            (commit: BitbucketCommit) =>
               `- ${commit.hash.substring(0, 8)}: ${commit.message.split('\n')[0]}\n` +
               `  Author: ${commit.author.user?.display_name || commit.author.raw}\n` +
               `  Date: ${commit.date}`
@@ -584,11 +722,14 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches?${params}`;
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketBranchWithTarget>>(
+            url
+          );
 
         const branchList = data.values
           .map(
-            (branch: any) =>
+            (branch: BitbucketBranchWithTarget) =>
               `- ${branch.name}\n` +
               `  Target: ${branch.target.hash.substring(0, 8)}\n` +
               `  Date: ${branch.target.date}`
@@ -654,11 +795,12 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/search/code?${params}`;
-        const data = await makeRequest(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketSearchResult>>(url);
 
         const resultList = data.values
           .map(
-            (result: any) =>
+            (result: BitbucketSearchResult) =>
               `- File: ${result.file.path}\n` +
               `  Line: ${result.line_number}\n` +
               `  Content: ${result.content_match_text}`
@@ -681,7 +823,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       case 'bb_get_user': {
         const parsed = GetUserSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/users/${parsed.username}`;
-        const user = await makeRequest(url);
+        const user = await makeRequest<BitbucketUser>(url);
 
         return {
           content: [
@@ -702,7 +844,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       case 'bb_get_workspace': {
         const parsed = GetWorkspaceSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/workspaces/${parsed.workspace}`;
-        const workspace = await makeRequest(url);
+        const workspace = await makeRequest<BitbucketWorkspace>(url);
 
         return {
           content: [
