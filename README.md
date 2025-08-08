@@ -7,26 +7,31 @@ A Model Context Protocol (MCP) server for Bitbucket that provides read-only acce
 This server provides the following **read-only** tools:
 
 ### Repository Management
+
 - **bb_get_repository** - Get detailed information about a specific repository
 - **bb_list_repositories** - List repositories in a workspace
 - **bb_get_file_content** - Get the content of a file from a repository
 - **bb_search_code** - Search for code in a repository
 
 ### Pull Requests
+
 - **bb_get_pull_requests** - Get pull requests for a repository (with filtering)
 - **bb_get_pull_request** - Get detailed information about a specific pull request
 - **bb_get_pull_request_comments** - Get comments for a specific pull request
 - **bb_get_pull_request_activity** - Get activity (reviews, approvals, comments) for a specific pull request
 
 ### Issues
+
 - **bb_get_issues** - Get issues for a repository (with filtering)
 - **bb_get_issue** - Get detailed information about a specific issue
 
 ### Version Control
+
 - **bb_get_commits** - Get commits for a repository branch
 - **bb_get_branches** - Get branches for a repository
 
 ### Users & Workspaces
+
 - **bb_get_user** - Get information about a Bitbucket user
 - **bb_get_workspace** - Get information about a workspace
 
@@ -46,17 +51,20 @@ npm install -g bitbucket-mcp-server
 ### From Source
 
 1. Clone this repository:
+
 ```bash
 git clone <repository-url>
 cd bitbucket-mcp-server
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Build the project:
+
 ```bash
 npm run build
 ```
@@ -66,11 +74,14 @@ npm run build
 ### Important Note for Windows Users
 
 When configuring file paths in JSON configuration files:
-- **Windows**: Use double backslashes `\\` or forward slashes `/` in paths
-  - Example: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"` 
-  - Or: `"C:/htdocs/bitbucket-mcp/build/index.js"`
+
+- **Windows**: Multiple path formats are supported
+  - **Double backslashes**: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"`
+  - **Forward slashes**: `"C:/htdocs/bitbucket-mcp/build/index.js"`
+  - **Unix-style with drive**: `"c:/htdocs/bitbucket-mcp/build/index.js"` (lowercase drive letter)
+  - **Unix-style without colon**: `"c/htdocs/bitbucket-mcp/build/index.js"` (may work in some contexts)
   - **With spaces**: `"C:\\Program Files\\bitbucket-mcp\\build\\index.js"`
-  - **Or with spaces**: `"C:/Program Files/bitbucket-mcp/build/index.js"`
+  - **With spaces (forward slash)**: `"C:/Program Files/bitbucket-mcp/build/index.js"`
 - **macOS/Linux**: Use forward slashes `/`
   - Example: `"/home/user/bitbucket-mcp/build/index.js"`
   - **With spaces**: `"/home/user/My Projects/bitbucket-mcp/build/index.js"`
@@ -93,9 +104,11 @@ Without authentication, you can still access public repositories and data.
 Add this to your Claude Desktop configuration file:
 
 #### macOS
+
 Location: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 #### Windows
+
 Location: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
@@ -114,6 +127,7 @@ Location: `%APPDATA%\Claude\claude_desktop_config.json`
 ```
 
 **Example with spaces in path:**
+
 ```json
 {
   "mcpServers": {
@@ -130,10 +144,15 @@ Location: `%APPDATA%\Claude\claude_desktop_config.json`
 ```
 
 **Path Examples by Operating System:**
-- **Windows**: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"` (use double backslashes)
+
+- **Windows (recommended)**: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"` (double backslashes)
+- **Windows (alternative)**: `"C:/htdocs/bitbucket-mcp/build/index.js"` (forward slashes)
+- **Windows (Unix-style)**: `"c:/htdocs/bitbucket-mcp/build/index.js"` (lowercase drive, forward slashes)
+- **Windows (Unix-style alt)**: `"c/htdocs/bitbucket-mcp/build/index.js"` (no colon, may work in some contexts)
 - **Windows with spaces**: `"C:\\Program Files\\bitbucket-mcp\\build\\index.js"`
+- **Windows with spaces (alt)**: `"C:/Program Files/bitbucket-mcp/build/index.js"`
 - **Windows Documents folder**: `"C:\\Users\\YourName\\Documents\\bitbucket-mcp\\build\\index.js"`
-- **macOS/Linux**: `"/absolute/path/to/bitbucket-mcp/build/index.js"` (use forward slashes)
+- **macOS/Linux**: `"/absolute/path/to/bitbucket-mcp/build/index.js"` (forward slashes only)
 - **macOS/Linux with spaces**: `"/home/user/My Projects/bitbucket-mcp/build/index.js"`
 
 Or using npx (if installed globally):
@@ -160,6 +179,7 @@ This MCP server is fully compatible with VS Code GitHub Copilot, enabling you to
 #### Step 1: Install Required Extensions
 
 1. **GitHub Copilot Extension** (if not already installed):
+
    - Open VS Code
    - Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
    - Search for "GitHub Copilot" by GitHub
@@ -179,6 +199,7 @@ Create or update your VS Code settings to include the MCP server configuration:
 3. Add the Bitbucket MCP server configuration:
 
 **Option A: Using VS Code Settings UI**
+
 - Navigate to Extensions → MCP → Servers
 - Add a new server with these details:
   - Name: `bitbucket`
@@ -192,6 +213,7 @@ Create or update your VS Code settings to include the MCP server configuration:
 Add this to your VS Code `settings.json`:
 
 **Windows:**
+
 ```json
 {
   "mcp.servers": {
@@ -208,6 +230,7 @@ Add this to your VS Code `settings.json`:
 ```
 
 **Windows with spaces in path:**
+
 ```json
 {
   "mcp.servers": {
@@ -224,6 +247,7 @@ Add this to your VS Code `settings.json`:
 ```
 
 **macOS/Linux:**
+
 ```json
 {
   "mcp.servers": {
@@ -251,11 +275,13 @@ Add this to your VS Code `settings.json`:
 Once configured, you can use Bitbucket tools directly in VS Code through GitHub Copilot Chat:
 
 **Open Copilot Chat:**
+
 - Use Ctrl+Alt+I / Cmd+Alt+I, or
 - Click the chat icon in the activity bar, or
 - Open Command Palette and run "GitHub Copilot: Open Chat"
 
 **Example Copilot Chat Commands:**
+
 ```
 @copilot using bitbucket, show me repositories in myworkspace
 
@@ -274,6 +300,7 @@ Once configured, you can use Bitbucket tools directly in VS Code through GitHub 
 Create a `.vscode/settings.json` file in your project root:
 
 **For this project (recommended):**
+
 ```json
 {
   "mcp.servers": {
@@ -290,6 +317,7 @@ Create a `.vscode/settings.json` file in your project root:
 ```
 
 **For external installation:**
+
 ```json
 {
   "mcp.servers": {
@@ -306,7 +334,9 @@ Create a `.vscode/settings.json` file in your project root:
 ```
 
 **Environment Variables via .env:**
+
 1. Create a `.env` file in your workspace:
+
 ```env
 BITBUCKET_USERNAME=your-username
 BITBUCKET_APP_PASSWORD=your-app-password
@@ -320,16 +350,19 @@ BITBUCKET_APP_PASSWORD=your-app-password
 **Common Issues:**
 
 1. **MCP Server Not Found:**
+
    - Verify the path to `build/index.js` is correct
    - Ensure the server is built (`npm run build`)
    - Check VS Code Developer Console for errors
 
 2. **Authentication Errors:**
+
    - Verify `BITBUCKET_USERNAME` and `BITBUCKET_APP_PASSWORD` are set correctly
    - Test authentication by running the server manually
    - Check Bitbucket App Password permissions
 
 3. **Extension Conflicts:**
+
    - Disable other MCP-related extensions temporarily
    - Restart VS Code after configuration changes
    - Check the VS Code Extensions view for conflicts
@@ -340,6 +373,7 @@ BITBUCKET_APP_PASSWORD=your-app-password
    - Use specific tool names with `bb_` prefix
 
 **Debug Commands:**
+
 ```bash
 # Test the MCP server manually
 node build/index.js
@@ -351,19 +385,23 @@ BITBUCKET_USERNAME=your-user BITBUCKET_APP_PASSWORD=your-token node build/index.
 #### VS Code Features Integration
 
 **IntelliSense and Code Completion:**
+
 - GitHub Copilot will use Bitbucket repository data for better code suggestions
 - Context from Bitbucket issues and PRs will inform suggestions
 
 **Integrated Terminal:**
+
 - Use Copilot Chat in the integrated terminal
 - Access Bitbucket data while working on related code
 
 **Side Panel Integration:**
+
 - Keep Copilot Chat open in the side panel
 - Query Bitbucket data while editing files
 
 **Keyboard Shortcuts:**
 Set up custom keyboard shortcuts for frequent Bitbucket queries:
+
 1. Go to File → Preferences → Keyboard Shortcuts
 2. Search for "GitHub Copilot"
 3. Add custom keybindings for Copilot Chat
@@ -464,6 +502,7 @@ MIT License - see LICENSE file for details.
 ## Support
 
 For issues and questions:
+
 1. Check existing issues in the repository
 2. Create a new issue with detailed information
 3. Include Bitbucket MCP Server version and environment details
@@ -471,6 +510,7 @@ For issues and questions:
 ## Roadmap
 
 Future enhancements (all read-only):
+
 - Repository statistics and analytics
 - Advanced search capabilities
 - Webhook information retrieval

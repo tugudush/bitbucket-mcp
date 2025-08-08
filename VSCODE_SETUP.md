@@ -16,10 +16,12 @@ This guide provides step-by-step instructions for integrating the Bitbucket MCP 
 ### 1. Prerequisites
 
 **Install Node.js:**
+
 - Download and install Node.js 18 or higher from [nodejs.org](https://nodejs.org/)
 - Verify installation: `node --version` and `npm --version`
 
 **Install GitHub Copilot Extension:**
+
 1. Open VS Code
 2. Press `Ctrl+Shift+X` (Windows/Linux) or `Cmd+Shift+X` (macOS)
 3. Search for "GitHub Copilot"
@@ -31,13 +33,16 @@ This guide provides step-by-step instructions for integrating the Bitbucket MCP 
 ### 2. Environment Setup
 
 **Option A: Using .env file (Recommended)**
+
 1. Create a `.env` file in the project root:
+
 ```env
 BITBUCKET_USERNAME=your-username
 BITBUCKET_APP_PASSWORD=your-app-password
 ```
 
 **Option B: System Environment Variables**
+
 ```bash
 # Windows (Command Prompt)
 set BITBUCKET_USERNAME=your-username
@@ -53,6 +58,7 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 ```
 
 **Creating Bitbucket App Password:**
+
 1. Go to Bitbucket Settings → Personal settings → App passwords
 2. Click "Create app password"
 3. Give it a name (e.g., "MCP Server")
@@ -71,17 +77,20 @@ npm run build
 
 **Method 1: Use the provided configuration files**
 The project includes pre-configured VS Code settings:
+
 - `.vscode/settings.json` - MCP server configuration
 - `.vscode/mcp.json` - MCP server definition
 - `.vscode/tasks.json` - Build and run tasks
 - `.vscode/launch.json` - Debug configuration
 
 **Method 2: Manual configuration**
+
 1. Open VS Code settings (`Ctrl+,` / `Cmd+,`)
 2. Search for "mcp"
 3. Add MCP server configuration in settings.json:
 
 **Windows:**
+
 ```json
 {
   "mcp.servers": {
@@ -98,6 +107,7 @@ The project includes pre-configured VS Code settings:
 ```
 
 **Windows with spaces in path:**
+
 ```json
 {
   "mcp.servers": {
@@ -114,6 +124,7 @@ The project includes pre-configured VS Code settings:
 ```
 
 **macOS/Linux:**
+
 ```json
 {
   "mcp.servers": {
@@ -130,6 +141,7 @@ The project includes pre-configured VS Code settings:
 ```
 
 **Using workspace folder (cross-platform):**
+
 ```json
 {
   "mcp.servers": {
@@ -155,16 +167,19 @@ The project includes pre-configured VS Code settings:
 ### 6. Testing the Integration
 
 **Test 1: Check MCP Server**
-1. Open integrated terminal (`Ctrl+` ` / `Cmd+` `)
+
+1. Open integrated terminal (`Ctrl+` `/`Cmd+` `)
 2. Run: `node build/index.js`
 3. Should see: "Bitbucket MCP Server running on stdio"
 
 **Test 2: Test with Copilot Chat**
+
 1. Open Copilot Chat (`Ctrl+Alt+I` / `Cmd+Alt+I`)
 2. Try: `@copilot list available tools`
 3. Should see Bitbucket tools with `bb_` prefix
 
 **Test 3: Use a Bitbucket tool**
+
 1. In Copilot Chat, try: `@copilot using bitbucket, list repositories in myworkspace`
 2. Replace "myworkspace" with an actual workspace name
 
@@ -173,16 +188,19 @@ The project includes pre-configured VS Code settings:
 ### Opening Copilot Chat
 
 **Keyboard Shortcuts:**
+
 - `Ctrl+Alt+I` / `Cmd+Alt+I` - Open chat panel
 - `Ctrl+Shift+I` / `Cmd+Shift+I` - Open inline chat
 
 **Menu Options:**
+
 - View → Command Palette → "GitHub Copilot: Open Chat"
 - Click the chat icon in the activity bar
 
 ### Using Bitbucket Tools
 
 **Basic Commands:**
+
 ```
 @copilot using bitbucket, list repositories in myworkspace
 @copilot using bitbucket, get README.md from myworkspace/myrepo
@@ -190,6 +208,7 @@ The project includes pre-configured VS Code settings:
 ```
 
 **Advanced Workflows:**
+
 ```
 @copilot analyze myworkspace/myrepo using bitbucket tools and provide:
 1. Repository overview
@@ -201,6 +220,7 @@ The project includes pre-configured VS Code settings:
 ### Code Snippets
 
 Type these prefixes in VS Code and press Tab:
+
 - `bb-repos` - List repositories
 - `bb-prs` - List pull requests
 - `bb-file` - Get file content
@@ -210,6 +230,7 @@ Type these prefixes in VS Code and press Tab:
 ### Integrated Workflows
 
 **Context-Aware Development:**
+
 ```
 @copilot I'm working on this file. Using bitbucket tools:
 1. Check if there are related issues in myworkspace/myrepo
@@ -218,6 +239,7 @@ Type these prefixes in VS Code and press Tab:
 ```
 
 **Code Review Assistance:**
+
 ```
 @copilot using bitbucket, help me review PR #123 in myworkspace/myrepo
 Show me what changed and suggest potential issues
@@ -228,6 +250,7 @@ Show me what changed and suggest potential issues
 ### Workspace-Specific Settings
 
 Create `.vscode/settings.json` in your project:
+
 ```json
 {
   "mcp.servers": {
@@ -246,6 +269,7 @@ Create `.vscode/settings.json` in your project:
 ### Custom Tasks
 
 Use the provided tasks in VS Code:
+
 - `Ctrl+Shift+P` → "Tasks: Run Task"
 - Select "Build Bitbucket MCP Server" or "Start Bitbucket MCP Server"
 
@@ -260,21 +284,25 @@ Use the provided tasks in VS Code:
 ### Common Issues
 
 **1. "MCP server not found"**
+
 - Check that `build/index.js` exists (`npm run build`)
 - Verify the path in VS Code settings
 - Restart VS Code
 
 **2. "Authentication failed"**
+
 - Check environment variables are set correctly
 - Verify Bitbucket App Password permissions
 - Test with: `node build/index.js` in terminal
 
 **3. "Tools not available in Copilot Chat"**
+
 - Ensure GitHub Copilot Chat extension is installed
 - Check if MCP integration is enabled in Copilot settings
 - Try: `@copilot list available tools`
 
 **4. "Permission denied"**
+
 - Check Bitbucket App Password has Repository:Read permission
 - Verify workspace/repository names are correct
 - Test with public repositories first
@@ -301,16 +329,19 @@ DEBUG=* node build/index.js
 ## Best Practices
 
 ### Security
+
 - Never commit `.env` files with credentials
 - Use workspace-specific environment variables
 - Regularly rotate Bitbucket App Passwords
 
 ### Performance
+
 - Use pagination for large repositories
 - Cache frequently accessed data
 - Avoid concurrent API calls
 
 ### Workflow Integration
+
 - Combine Bitbucket data with local file context
 - Use in code reviews and planning
 - Integrate with VS Code tasks and debugging
@@ -318,16 +349,19 @@ DEBUG=* node build/index.js
 ## Getting Help
 
 **VS Code Issues:**
+
 1. Check VS Code Developer Console
 2. Verify extension compatibility
 3. Update VS Code and extensions
 
 **MCP Server Issues:**
+
 1. Check server logs in terminal
 2. Test API credentials manually
 3. Review Bitbucket API documentation
 
 **GitHub Copilot Issues:**
+
 1. Check Copilot extension status
 2. Verify GitHub account permissions
 3. Review MCP integration settings
