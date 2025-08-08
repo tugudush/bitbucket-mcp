@@ -97,6 +97,22 @@ The project includes pre-configured VS Code settings:
 }
 ```
 
+**Windows with spaces in path:**
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["C:\\Program Files\\bitbucket-mcp\\build\\index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
 **macOS/Linux:**
 ```json
 {

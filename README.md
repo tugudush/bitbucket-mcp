@@ -69,8 +69,13 @@ When configuring file paths in JSON configuration files:
 - **Windows**: Use double backslashes `\\` or forward slashes `/` in paths
   - Example: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"` 
   - Or: `"C:/htdocs/bitbucket-mcp/build/index.js"`
+  - **With spaces**: `"C:\\Program Files\\bitbucket-mcp\\build\\index.js"`
+  - **Or with spaces**: `"C:/Program Files/bitbucket-mcp/build/index.js"`
 - **macOS/Linux**: Use forward slashes `/`
   - Example: `"/home/user/bitbucket-mcp/build/index.js"`
+  - **With spaces**: `"/home/user/My Projects/bitbucket-mcp/build/index.js"`
+
+**Important**: Paths with spaces do NOT need extra quotes in JSON - the JSON string quotes handle the spaces automatically.
 
 ### Authentication
 
@@ -108,9 +113,28 @@ Location: `%APPDATA%\Claude\claude_desktop_config.json`
 }
 ```
 
+**Example with spaces in path:**
+```json
+{
+  "mcpServers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["C:\\Program Files\\bitbucket-mcp\\build\\index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
 **Path Examples by Operating System:**
 - **Windows**: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"` (use double backslashes)
+- **Windows with spaces**: `"C:\\Program Files\\bitbucket-mcp\\build\\index.js"`
+- **Windows Documents folder**: `"C:\\Users\\YourName\\Documents\\bitbucket-mcp\\build\\index.js"`
 - **macOS/Linux**: `"/absolute/path/to/bitbucket-mcp/build/index.js"` (use forward slashes)
+- **macOS/Linux with spaces**: `"/home/user/My Projects/bitbucket-mcp/build/index.js"`
 
 Or using npx (if installed globally):
 
@@ -174,6 +198,22 @@ Add this to your VS Code `settings.json`:
     "bitbucket": {
       "command": "node",
       "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
+**Windows with spaces in path:**
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["C:\\Program Files\\bitbucket-mcp\\build\\index.js"],
       "env": {
         "BITBUCKET_USERNAME": "your-username",
         "BITBUCKET_APP_PASSWORD": "your-app-password"
