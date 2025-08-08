@@ -37,14 +37,18 @@ name: 'get_repository'     // ❌ Wrong - conflicts with GitHub MCP
 ```
 
 ### 2. Authentication Pattern
-Environment-based with graceful fallback:
+Environment-based with graceful fallback (prioritizes API tokens over App Passwords):
 ```typescript
-// From src/index.ts lines 276-283
+// From src/index.ts - Updated for API token migration
+const apiToken = process.env.BITBUCKET_API_TOKEN;
 const username = process.env.BITBUCKET_USERNAME;
 const appPassword = process.env.BITBUCKET_APP_PASSWORD;
-if (username && appPassword) {
+
+if (apiToken) {
+  headers.Authorization = `Bearer ${apiToken}`;  // Recommended
+} else if (username && appPassword) {
   const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
-  headers.Authorization = `Basic ${auth}`;
+  headers.Authorization = `Basic ${auth}`;  // Legacy fallback
 }
 ```
 
@@ -67,10 +71,12 @@ data.values.map((repo: BitbucketRepository) => ...)  // ✅ Type-safe
 - Configuration in `.vscode/mcp.json` using stdio transport
 - Path formats: Windows supports both `C:\\path\\to\\build\\index.js` and `C:/path/to/build/index.js`
 - Use `${workspaceFolder}/build/index.js` for workspace-relative paths
+- **Auth**: Use `BITBUCKET_API_TOKEN` (recommended) or legacy `BITBUCKET_USERNAME`+`BITBUCKET_APP_PASSWORD`
 
 ### Claude Desktop Integration
 - Requires `claude_desktop_config.json` modification with `mcpServers` section
 - Environment variables passed via `env` object in configuration
+- **Migration Note**: App passwords deprecated Sept 9, 2025 - migrate to API tokens
 
 ### Cross-Platform Considerations
 - **Windows**: JSON paths handle spaces automatically, no extra escaping needed

@@ -275,10 +275,16 @@ async function makeRequest<T = unknown>(
   };
 
   // Add authentication if available
+  // Priority: API Token (Bearer auth) > App Password (Basic auth)
+  const apiToken = process.env.BITBUCKET_API_TOKEN;
   const username = process.env.BITBUCKET_USERNAME;
   const appPassword = process.env.BITBUCKET_APP_PASSWORD;
 
-  if (username && appPassword) {
+  if (apiToken) {
+    // Use API Token with Bearer authentication (recommended)
+    headers.Authorization = `Bearer ${apiToken}`;
+  } else if (username && appPassword) {
+    // Fallback to App Password with Basic authentication (legacy)
     const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
     headers.Authorization = `Basic ${auth}`;
   }
@@ -883,7 +889,7 @@ async function runServer() {
   await server.connect(transport);
   console.error('Bitbucket MCP Server running on stdio');
   console.error(
-    'Note: Set BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD environment variables for authenticated requests'
+    'Note: Set BITBUCKET_API_TOKEN (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
   );
 }
 

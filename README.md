@@ -90,7 +90,15 @@ When configuring file paths in JSON configuration files:
 
 ### Authentication
 
-The server supports authenticated requests using Bitbucket App Passwords:
+The server supports authenticated requests using Bitbucket API tokens or App Passwords:
+
+**Recommended: API Tokens (replacing App Passwords as of September 2025)**
+
+1. Create an API Token in your Bitbucket account settings
+2. Set the environment variable:
+   - `BITBUCKET_API_TOKEN` - Your API token
+
+**Legacy: App Passwords (being deprecated September 9, 2025)**
 
 1. Create an App Password in your Bitbucket account settings
 2. Set the following environment variables:
@@ -110,6 +118,22 @@ Location: `~/Library/Application Support/Claude/claude_desktop_config.json`
 #### Windows
 
 Location: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+**Example with legacy App Password:**
 
 ```json
 {
@@ -213,6 +237,22 @@ Create or update your VS Code settings to include the MCP server configuration:
 Add this to your VS Code `settings.json`:
 
 **Windows:**
+
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+**Windows with legacy App Password:**
 
 ```json
 {
