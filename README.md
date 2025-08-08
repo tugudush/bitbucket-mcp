@@ -15,6 +15,8 @@ This server provides the following **read-only** tools:
 ### Pull Requests
 - **bb_get_pull_requests** - Get pull requests for a repository (with filtering)
 - **bb_get_pull_request** - Get detailed information about a specific pull request
+- **bb_get_pull_request_comments** - Get comments for a specific pull request
+- **bb_get_pull_request_activity** - Get activity (reviews, approvals, comments) for a specific pull request
 
 ### Issues
 - **bb_get_issues** - Get issues for a repository (with filtering)
@@ -344,6 +346,9 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 
 - Repositories API (read-only operations)
 - Pull Requests API (read-only operations)
+  - Pull request details and listing
+  - Pull request comments (inline and general)
+  - Pull request activity (reviews, approvals, state changes)
 - Issues API (read-only operations)
 - Source API (file content access)
 - Search API (code search)

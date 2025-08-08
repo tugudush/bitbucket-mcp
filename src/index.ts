@@ -39,6 +39,22 @@ const GetPullRequestSchema = z.object({
   pull_request_id: z.number().describe("The pull request ID"),
 });
 
+const GetPullRequestCommentsSchema = z.object({
+  workspace: z.string().describe("The workspace or username"),
+  repo_slug: z.string().describe("The repository name"),
+  pull_request_id: z.number().describe("The pull request ID"),
+  page: z.number().optional().describe("Page number for pagination"),
+  pagelen: z.number().optional().describe("Number of items per page (max 100)"),
+});
+
+const GetPullRequestActivitySchema = z.object({
+  workspace: z.string().describe("The workspace or username"),
+  repo_slug: z.string().describe("The repository name"),
+  pull_request_id: z.number().describe("The pull request ID"),
+  page: z.number().optional().describe("Page number for pagination"),
+  pagelen: z.number().optional().describe("Number of items per page (max 100)"),
+});
+
 const GetIssuesSchema = z.object({
   workspace: z.string().describe("The workspace or username"),
   repo_slug: z.string().describe("The repository name"),
@@ -155,6 +171,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "bb_get_pull_request",
         description: "Get detailed information about a specific pull request",
         inputSchema: zodToJsonSchema(GetPullRequestSchema),
+      },
+      {
+        name: "bb_get_pull_request_comments",
+        description: "Get comments for a specific pull request",
+        inputSchema: zodToJsonSchema(GetPullRequestCommentsSchema),
+      },
+      {
+        name: "bb_get_pull_request_activity",
+        description: "Get activity (reviews, approvals, comments) for a specific pull request",
+        inputSchema: zodToJsonSchema(GetPullRequestActivitySchema),
       },
       {
         name: "bb_get_issues",
@@ -309,6 +335,84 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     `Updated: ${pr.updated_on}\n` +
                     `Reviewers: ${pr.reviewers?.map((r: any) => r.display_name).join(", ") || "None"}\n\n` +
                     `Description:\n${pr.description || "No description"}`,
+            },
+          ],
+        };
+      }
+
+      case "bb_get_pull_request_comments": {
+        const parsed = GetPullRequestCommentsSchema.parse(args);
+        const params = new URLSearchParams();
+        if (parsed.page) params.append("page", parsed.page.toString());
+        if (parsed.pagelen) params.append("pagelen", Math.min(parsed.pagelen, 100).toString());
+        
+        const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/comments?${params}`;
+        const data = await makeRequest(url);
+        
+        const commentList = data.values.map((comment: any) => 
+          `- Comment by ${comment.user.display_name} (${comment.created_on}):\n` +
+          `  ${comment.content?.raw || comment.content?.markup || "No content"}\n` +
+          (comment.inline ? `  File: ${comment.inline.path} (Line ${comment.inline.to || comment.inline.from})\n` : "") +
+          (comment.parent ? `  Reply to comment #${comment.parent.id}\n` : "")
+        ).join("\n");
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Comments for Pull Request #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug}:\n\n${commentList}\n\n` +
+                    `Page: ${data.page || 1}\n` +
+                    `Total: ${data.size || 0} comments`,
+            },
+          ],
+        };
+      }
+
+      case "bb_get_pull_request_activity": {
+        const parsed = GetPullRequestActivitySchema.parse(args);
+        const params = new URLSearchParams();
+        if (parsed.page) params.append("page", parsed.page.toString());
+        if (parsed.pagelen) params.append("pagelen", Math.min(parsed.pagelen, 100).toString());
+        
+        const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/activity?${params}`;
+        const data = await makeRequest(url);
+        
+        const activityList = data.values.map((activity: any) => {
+          let activityText = `- ${activity.update?.date || activity.comment?.created_on || "Unknown date"}`;
+          
+          if (activity.update) {
+            activityText += ` - ${activity.update.author.display_name}`;
+            if (activity.update.state) {
+              activityText += ` changed state to: ${activity.update.state}`;
+            }
+            if (activity.update.title) {
+              activityText += ` updated title to: "${activity.update.title}"`;
+            }
+            if (activity.update.reviewers) {
+              const reviewers = activity.update.reviewers.map((r: any) => r.display_name).join(", ");
+              activityText += ` updated reviewers: ${reviewers}`;
+            }
+            if (activity.approval) {
+              activityText += ` ${activity.approval.state === "approved" ? "approved" : "requested changes"}`;
+            }
+          } else if (activity.comment) {
+            activityText += ` - ${activity.comment.user.display_name} commented:\n`;
+            activityText += `  "${activity.comment.content?.raw || activity.comment.content?.markup || "No content"}"`;
+            if (activity.comment.inline) {
+              activityText += `\n  (On file: ${activity.comment.inline.path}, line ${activity.comment.inline.to || activity.comment.inline.from})`;
+            }
+          }
+          
+          return activityText;
+        }).join("\n\n");
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Activity for Pull Request #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug}:\n\n${activityList}\n\n` +
+                    `Page: ${data.page || 1}\n` +
+                    `Total: ${data.size || 0} activity items`,
             },
           ],
         };

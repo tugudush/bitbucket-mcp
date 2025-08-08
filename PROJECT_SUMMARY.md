@@ -6,7 +6,7 @@ This is a comprehensive Model Context Protocol (MCP) server that provides **read
 
 ## ✅ Implemented Features
 
-### 🔧 Core Tools (12 total)
+### 🔧 Core Tools (14 total)
 
 1. **Repository Management**
    - `bb_get_repository` - Get detailed repository information
@@ -17,6 +17,8 @@ This is a comprehensive Model Context Protocol (MCP) server that provides **read
 2. **Pull Request Operations**
    - `bb_get_pull_requests` - List pull requests with filtering options
    - `bb_get_pull_request` - Get detailed PR information
+   - `bb_get_pull_request_comments` - Get PR comments (inline and general)
+   - `bb_get_pull_request_activity` - Get PR activity (reviews, approvals, changes)
 
 3. **Issue Management**
    - `bb_get_issues` - List issues with state and kind filtering
