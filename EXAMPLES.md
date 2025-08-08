@@ -31,6 +31,18 @@ Ask Claude: "List merged pull requests for myworkspace/myrepo"
 Ask Claude: "Get details for pull request #123 in myworkspace/myrepo"
 ```
 
+### Pull Request Comments
+```
+Ask Claude: "Show me all comments for pull request #123 in myworkspace/myrepo"
+Ask Claude: "Get the discussion on PR #123 in myworkspace/myrepo"
+```
+
+### Pull Request Activity and Reviews
+```
+Ask Claude: "Show me the activity and reviews for pull request #123 in myworkspace/myrepo"
+Ask Claude: "Get the approval status and review history for PR #123 in myworkspace/myrepo"
+```
+
 ## Issue Management
 
 ### List Issues
@@ -93,8 +105,18 @@ Ask Claude: "Analyze the myworkspace/myrepo repository. Show me:
 ```
 Ask Claude: "Help me review pull request #123 in myworkspace/myrepo. Show me:
 - Pull request details
-- Files changed (if you can get the file list)
-- Recent commits related to this PR"
+- All comments and discussions
+- Review activity and approvals
+- Recent commits"
+```
+
+### Comprehensive PR Analysis
+```
+Ask Claude: "Give me a complete analysis of PR #123 in myworkspace/myrepo including:
+- PR description and metadata
+- All comments (both inline and general)
+- Review history and current approval status
+- Activity timeline"
 ```
 
 ### Issue Triage

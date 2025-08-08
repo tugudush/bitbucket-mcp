@@ -1,0 +1,85 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Bitbucket MCP Server",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Start Bitbucket MCP Server",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "start"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Test Bitbucket MCP Server",
+      "type": "shell",
+      "command": "node",
+      "args": ["build/index.js"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "options": {
+        "env": {
+          "BITBUCKET_USERNAME": "${input:bitbucketUsername}",
+          "BITBUCKET_APP_PASSWORD": "${input:bitbucketAppPassword}"
+        }
+      }
+    },
+    {
+      "label": "Watch and Build",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "watch"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "isBackground": true,
+      "problemMatcher": ["$tsc-watch"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "bitbucketUsername",
+      "description": "Enter your Bitbucket username",
+      "default": "",
+      "type": "promptString"
+    },
+    {
+      "id": "bitbucketAppPassword",
+      "description": "Enter your Bitbucket App Password",
+      "default": "",
+      "type": "promptString"
+    }
+  ]
+}

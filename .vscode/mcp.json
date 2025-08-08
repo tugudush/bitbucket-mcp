@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "bitbucket-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./build/index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}

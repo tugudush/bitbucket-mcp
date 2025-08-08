@@ -1,0 +1,123 @@
+{
+  "List Repositories": {
+    "prefix": "bb-repos",
+    "body": [
+      "@copilot using bitbucket, list repositories in ${1:workspace}"
+    ],
+    "description": "List repositories in a Bitbucket workspace"
+  },
+  "Get Repository Info": {
+    "prefix": "bb-repo-info",
+    "body": [
+      "@copilot using bitbucket, get information about ${1:workspace}/${2:repository}"
+    ],
+    "description": "Get detailed information about a specific repository"
+  },
+  "List Pull Requests": {
+    "prefix": "bb-prs",
+    "body": [
+      "@copilot using bitbucket, show ${1|open,merged,all|} pull requests for ${2:workspace}/${3:repository}"
+    ],
+    "description": "List pull requests for a repository"
+  },
+  "Get Pull Request": {
+    "prefix": "bb-pr",
+    "body": [
+      "@copilot using bitbucket, get details for pull request #${1:id} in ${2:workspace}/${3:repository}"
+    ],
+    "description": "Get detailed information about a specific pull request"
+  },
+  "Get Pull Request Comments": {
+    "prefix": "bb-pr-comments",
+    "body": [
+      "@copilot using bitbucket, show me all comments for pull request #${1:id} in ${2:workspace}/${3:repository}"
+    ],
+    "description": "Get comments for a specific pull request"
+  },
+  "Get Pull Request Activity": {
+    "prefix": "bb-pr-activity",
+    "body": [
+      "@copilot using bitbucket, show me the activity and reviews for pull request #${1:id} in ${2:workspace}/${3:repository}"
+    ],
+    "description": "Get activity and reviews for a specific pull request"
+  },
+  "List Issues": {
+    "prefix": "bb-issues",
+    "body": [
+      "@copilot using bitbucket, show ${1|open,all|} ${2|bugs,enhancements,tasks,all|} in ${3:workspace}/${4:repository}"
+    ],
+    "description": "List issues for a repository"
+  },
+  "Get Issue": {
+    "prefix": "bb-issue",
+    "body": [
+      "@copilot using bitbucket, get details for issue #${1:id} in ${2:workspace}/${3:repository}"
+    ],
+    "description": "Get detailed information about a specific issue"
+  },
+  "Get File Content": {
+    "prefix": "bb-file",
+    "body": [
+      "@copilot using bitbucket, get the content of ${1:file-path} from ${2:workspace}/${3:repository}${4: on branch ${5:branch-name}}"
+    ],
+    "description": "Get the content of a file from a repository"
+  },
+  "Search Code": {
+    "prefix": "bb-search",
+    "body": [
+      "@copilot using bitbucket, search for \"${1:search-term}\" in ${2:workspace}/${3:repository}"
+    ],
+    "description": "Search for code in a repository"
+  },
+  "List Commits": {
+    "prefix": "bb-commits",
+    "body": [
+      "@copilot using bitbucket, show recent commits${1: on ${2:branch-name}} for ${3:workspace}/${4:repository}"
+    ],
+    "description": "List commits for a repository branch"
+  },
+  "List Branches": {
+    "prefix": "bb-branches",
+    "body": [
+      "@copilot using bitbucket, list branches for ${1:workspace}/${2:repository}"
+    ],
+    "description": "List branches for a repository"
+  },
+  "Get User Info": {
+    "prefix": "bb-user",
+    "body": [
+      "@copilot using bitbucket, get information about user ${1:username}"
+    ],
+    "description": "Get information about a Bitbucket user"
+  },
+  "Get Workspace Info": {
+    "prefix": "bb-workspace",
+    "body": [
+      "@copilot using bitbucket, get information about workspace ${1:workspace}"
+    ],
+    "description": "Get information about a workspace"
+  },
+  "Repository Analysis": {
+    "prefix": "bb-analyze",
+    "body": [
+      "@copilot using bitbucket, analyze ${1:workspace}/${2:repository}. Show me:",
+      "- Repository information",
+      "- Recent commits on main branch", 
+      "- Open pull requests",
+      "- Open issues",
+      "- List of branches"
+    ],
+    "description": "Comprehensive repository analysis"
+  },
+  "PR Review": {
+    "prefix": "bb-review",
+    "body": [
+      "@copilot using bitbucket, help me review pull request #${1:id} in ${2:workspace}/${3:repository}. Show me:",
+      "- Pull request details",
+      "- All comments and discussions",
+      "- Review activity and approvals",
+      "- Recent commits"
+    ],
+    "description": "Comprehensive pull request review assistance"
+  }
+}

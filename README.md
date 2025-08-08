@@ -15,6 +15,8 @@ This server provides the following **read-only** tools:
 ### Pull Requests
 - **bb_get_pull_requests** - Get pull requests for a repository (with filtering)
 - **bb_get_pull_request** - Get detailed information about a specific pull request
+- **bb_get_pull_request_comments** - Get comments for a specific pull request
+- **bb_get_pull_request_activity** - Get activity (reviews, approvals, comments) for a specific pull request
 
 ### Issues
 - **bb_get_issues** - Get issues for a repository (with filtering)
@@ -114,6 +116,178 @@ Or using npx (if installed globally):
 }
 ```
 
+### VS Code GitHub Copilot Integration
+
+This MCP server is fully compatible with VS Code GitHub Copilot, enabling you to use Bitbucket data directly within your VS Code editor. Follow these steps to set it up:
+
+#### Step 1: Install Required Extensions
+
+1. **GitHub Copilot Extension** (if not already installed):
+   - Open VS Code
+   - Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+   - Search for "GitHub Copilot" by GitHub
+   - Install the extension
+   - Sign in with your GitHub account
+
+2. **MCP Extension for VS Code** (if available):
+   - Search for "MCP" or "Model Context Protocol" in the Extensions marketplace
+   - Install any official MCP extension for VS Code
+
+#### Step 2: Configure MCP Server in VS Code
+
+Create or update your VS Code settings to include the MCP server configuration:
+
+1. Open VS Code Settings (Ctrl+, / Cmd+,)
+2. Search for "mcp" or go to Extensions → MCP
+3. Add the Bitbucket MCP server configuration:
+
+**Option A: Using VS Code Settings UI**
+- Navigate to Extensions → MCP → Servers
+- Add a new server with these details:
+  - Name: `bitbucket`
+  - Command: `node`
+  - Args: `["/absolute/path/to/bitbucket-mcp-server/build/index.js"]`
+  - Environment Variables:
+    - `BITBUCKET_USERNAME`: your-username
+    - `BITBUCKET_APP_PASSWORD`: your-app-password
+
+**Option B: Using settings.json**
+Add this to your VS Code `settings.json`:
+
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["/absolute/path/to/bitbucket-mcp-server/build/index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
+#### Step 3: Configure GitHub Copilot to Use MCP
+
+1. Open Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
+2. Run "GitHub Copilot: Configure MCP Servers"
+3. Enable the Bitbucket MCP server
+4. Restart VS Code if prompted
+
+#### Step 4: Using Bitbucket Tools in VS Code
+
+Once configured, you can use Bitbucket tools directly in VS Code through GitHub Copilot Chat:
+
+**Open Copilot Chat:**
+- Use Ctrl+Alt+I / Cmd+Alt+I, or
+- Click the chat icon in the activity bar, or
+- Open Command Palette and run "GitHub Copilot: Open Chat"
+
+**Example Copilot Chat Commands:**
+```
+@copilot using bitbucket, show me repositories in myworkspace
+
+@copilot get the README.md file from myworkspace/myrepo using bitbucket tools
+
+@copilot list open pull requests for myworkspace/myrepo
+
+@copilot search for "TODO" comments in myworkspace/myrepo using bitbucket
+
+@copilot show me recent commits on main branch of myworkspace/myrepo
+```
+
+#### Step 5: Advanced VS Code Integration
+
+**Workspace-Specific Configuration:**
+Create a `.vscode/settings.json` file in your project root:
+
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["${workspaceFolder}/path/to/bitbucket-mcp-server/build/index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
+**Environment Variables via .env:**
+1. Create a `.env` file in your workspace:
+```env
+BITBUCKET_USERNAME=your-username
+BITBUCKET_APP_PASSWORD=your-app-password
+```
+
+2. Install the "DotENV" extension for VS Code
+3. Update your MCP configuration to reference environment variables
+
+#### Troubleshooting VS Code Integration
+
+**Common Issues:**
+
+1. **MCP Server Not Found:**
+   - Verify the path to `build/index.js` is correct
+   - Ensure the server is built (`npm run build`)
+   - Check VS Code Developer Console for errors
+
+2. **Authentication Errors:**
+   - Verify `BITBUCKET_USERNAME` and `BITBUCKET_APP_PASSWORD` are set correctly
+   - Test authentication by running the server manually
+   - Check Bitbucket App Password permissions
+
+3. **Extension Conflicts:**
+   - Disable other MCP-related extensions temporarily
+   - Restart VS Code after configuration changes
+   - Check the VS Code Extensions view for conflicts
+
+4. **Tool Not Available in Chat:**
+   - Ensure the MCP server is properly registered
+   - Try restarting VS Code
+   - Use specific tool names with `bb_` prefix
+
+**Debug Commands:**
+```bash
+# Test the MCP server manually
+node build/index.js
+
+# Check server output
+BITBUCKET_USERNAME=your-user BITBUCKET_APP_PASSWORD=your-token node build/index.js
+```
+
+#### VS Code Features Integration
+
+**IntelliSense and Code Completion:**
+- GitHub Copilot will use Bitbucket repository data for better code suggestions
+- Context from Bitbucket issues and PRs will inform suggestions
+
+**Integrated Terminal:**
+- Use Copilot Chat in the integrated terminal
+- Access Bitbucket data while working on related code
+
+**Side Panel Integration:**
+- Keep Copilot Chat open in the side panel
+- Query Bitbucket data while editing files
+
+**Keyboard Shortcuts:**
+Set up custom keyboard shortcuts for frequent Bitbucket queries:
+1. Go to File → Preferences → Keyboard Shortcuts
+2. Search for "GitHub Copilot"
+3. Add custom keybindings for Copilot Chat
+
+#### Best Practices for VS Code + Bitbucket MCP
+
+1. **Context-Aware Queries:** Reference your current file or project when asking about Bitbucket data
+2. **Batch Operations:** Ask Copilot to perform multiple Bitbucket operations in one query
+3. **Code Integration:** Ask Copilot to analyze Bitbucket issues/PRs and suggest code changes
+4. **Workflow Integration:** Use Bitbucket data to inform your development workflow in VS Code
+
 ## Usage Examples
 
 Once configured, you can ask Claude to:
@@ -172,6 +346,9 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 
 - Repositories API (read-only operations)
 - Pull Requests API (read-only operations)
+  - Pull request details and listing
+  - Pull request comments (inline and general)
+  - Pull request activity (reviews, approvals, state changes)
 - Issues API (read-only operations)
 - Source API (file content access)
 - Search API (code search)

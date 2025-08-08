@@ -6,7 +6,7 @@ This is a comprehensive Model Context Protocol (MCP) server that provides **read
 
 ## ✅ Implemented Features
 
-### 🔧 Core Tools (12 total)
+### 🔧 Core Tools (14 total)
 
 1. **Repository Management**
    - `bb_get_repository` - Get detailed repository information
@@ -17,6 +17,8 @@ This is a comprehensive Model Context Protocol (MCP) server that provides **read
 2. **Pull Request Operations**
    - `bb_get_pull_requests` - List pull requests with filtering options
    - `bb_get_pull_request` - Get detailed PR information
+   - `bb_get_pull_request_comments` - Get PR comments (inline and general)
+   - `bb_get_pull_request_activity` - Get PR activity (reviews, approvals, changes)
 
 3. **Issue Management**
    - `bb_get_issues` - List issues with state and kind filtering
@@ -36,6 +38,31 @@ This is a comprehensive Model Context Protocol (MCP) server that provides **read
 - **Authentication support** - Uses Bitbucket App Passwords
 - **Error handling** - Graceful error management
 - **Rate limiting aware** - Respects API limits
+- **Tool name prefixing** - All tools prefixed with `bb_` to avoid conflicts
+
+## 🎨 VS Code GitHub Copilot Integration
+
+### Full VS Code Support
+- **Complete VS Code configuration** - Pre-configured .vscode/ directory
+- **GitHub Copilot Chat integration** - Use Bitbucket tools directly in Copilot Chat
+- **Code snippets** - Quick commands with tab completion
+- **Debug configuration** - Full debugging support for MCP server
+- **Task automation** - Build, run, and test tasks
+- **Extension recommendations** - Curated list of helpful extensions
+
+### Chat Commands
+```
+@copilot using bitbucket, list repositories in myworkspace
+@copilot using bitbucket, show open pull requests for myworkspace/myrepo
+@copilot using bitbucket, get README.md from myworkspace/myrepo
+```
+
+### Code Snippets
+- `bb-repos` → List repositories
+- `bb-prs` → List pull requests  
+- `bb-file` → Get file content
+- `bb-search` → Search code
+- `bb-analyze` → Repository analysis
 
 ## 📁 Project Structure
 
@@ -44,12 +71,20 @@ bitbucket-mcp/
 ├── src/
 │   └── index.ts              # Main server implementation
 ├── build/                    # Compiled JavaScript
-├── .vscode/
-│   └── mcp.json              # VS Code MCP configuration
+├── .vscode/                  # Complete VS Code integration
+│   ├── settings.json         # MCP server & Copilot configuration
+│   ├── mcp.json              # MCP server definition
+│   ├── tasks.json            # Build, run, test, and debug tasks
+│   ├── launch.json           # Debug configurations
+│   ├── extensions.json       # Recommended extensions
+│   └── snippets/
+│       └── bitbucket-mcp.code-snippets  # Chat command snippets
 ├── .github/
 │   └── copilot-instructions.md
-├── README.md                 # Comprehensive documentation
+├── README.md                 # Main documentation with VS Code setup
+├── VSCODE_SETUP.md          # Comprehensive VS Code integration guide
 ├── EXAMPLES.md               # Usage examples
+├── PROJECT_SUMMARY.md       # This file
 ├── LICENSE                   # MIT license
 ├── .env.example              # Environment configuration template
 ├── .gitignore               # Git ignore rules
@@ -59,17 +94,22 @@ bitbucket-mcp/
 
 ## 🚀 Getting Started
 
-### 1. Installation
+### 1. Standard Installation
 ```bash
 cd bitbucket-mcp
 npm install
 npm run build
 ```
 
-### 2. Configuration
-Set environment variables:
-- `BITBUCKET_USERNAME` - Your Bitbucket username
-- `BITBUCKET_APP_PASSWORD` - Your App Password
+### 2. VS Code GitHub Copilot Setup
+```bash
+# Set environment variables
+export BITBUCKET_USERNAME="your-username"
+export BITBUCKET_APP_PASSWORD="your-app-password"
+
+# Install GitHub Copilot extensions in VS Code
+# The project includes complete VS Code configuration
+```
 
 ### 3. Claude Desktop Integration
 Add to `claude_desktop_config.json`:
@@ -88,13 +128,27 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
+### 4. VS Code Integration
+- Open project in VS Code
+- Install recommended extensions (GitHub Copilot, etc.)
+- Use Ctrl+Alt+I to open Copilot Chat
+- Try: `@copilot using bitbucket, list repositories in myworkspace`
+
 ## 💡 Usage Examples
 
+### Claude Desktop / VS Code Copilot Chat
 - "List repositories in myworkspace"
-- "Show me open pull requests for myworkspace/myrepo"
+- "Show me open pull requests for myworkspace/myrepo"  
 - "Get the README.md file from myworkspace/myrepo"
 - "Search for 'TODO' comments in myworkspace/myrepo"
 - "Show me recent commits on the main branch"
+
+### VS Code Snippets (type + Tab)
+- `bb-repos` → "@copilot using bitbucket, list repositories in workspace"
+- `bb-prs` → "@copilot using bitbucket, show pull requests for repo"
+- `bb-file` → "@copilot using bitbucket, get file content"
+- `bb-search` → "@copilot using bitbucket, search for code"
+- `bb-analyze` → Complete repository analysis workflow
 
 ## 🔄 Available Scripts
 
