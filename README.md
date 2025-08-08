@@ -7,26 +7,26 @@ A Model Context Protocol (MCP) server for Bitbucket that provides read-only acce
 This server provides the following **read-only** tools:
 
 ### Repository Management
-- **get_repository** - Get detailed information about a specific repository
-- **list_repositories** - List repositories in a workspace
-- **get_file_content** - Get the content of a file from a repository
-- **search_code** - Search for code in a repository
+- **bb_get_repository** - Get detailed information about a specific repository
+- **bb_list_repositories** - List repositories in a workspace
+- **bb_get_file_content** - Get the content of a file from a repository
+- **bb_search_code** - Search for code in a repository
 
 ### Pull Requests
-- **get_pull_requests** - Get pull requests for a repository (with filtering)
-- **get_pull_request** - Get detailed information about a specific pull request
+- **bb_get_pull_requests** - Get pull requests for a repository (with filtering)
+- **bb_get_pull_request** - Get detailed information about a specific pull request
 
 ### Issues
-- **get_issues** - Get issues for a repository (with filtering)
-- **get_issue** - Get detailed information about a specific issue
+- **bb_get_issues** - Get issues for a repository (with filtering)
+- **bb_get_issue** - Get detailed information about a specific issue
 
 ### Version Control
-- **get_commits** - Get commits for a repository branch
-- **get_branches** - Get branches for a repository
+- **bb_get_commits** - Get commits for a repository branch
+- **bb_get_branches** - Get branches for a repository
 
 ### Users & Workspaces
-- **get_user** - Get information about a Bitbucket user
-- **get_workspace** - Get information about a workspace
+- **bb_get_user** - Get information about a Bitbucket user
+- **bb_get_workspace** - Get information about a workspace
 
 ## Installation
 

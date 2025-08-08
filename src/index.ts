@@ -137,62 +137,62 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "get_repository",
+        name: "bb_get_repository",
         description: "Get detailed information about a specific repository",
         inputSchema: zodToJsonSchema(GetRepositorySchema),
       },
       {
-        name: "list_repositories",
+        name: "bb_list_repositories",
         description: "List repositories in a workspace",
         inputSchema: zodToJsonSchema(ListRepositoriesSchema),
       },
       {
-        name: "get_pull_requests",
+        name: "bb_get_pull_requests",
         description: "Get pull requests for a repository",
         inputSchema: zodToJsonSchema(GetPullRequestsSchema),
       },
       {
-        name: "get_pull_request",
+        name: "bb_get_pull_request",
         description: "Get detailed information about a specific pull request",
         inputSchema: zodToJsonSchema(GetPullRequestSchema),
       },
       {
-        name: "get_issues",
+        name: "bb_get_issues",
         description: "Get issues for a repository",
         inputSchema: zodToJsonSchema(GetIssuesSchema),
       },
       {
-        name: "get_issue",
+        name: "bb_get_issue",
         description: "Get detailed information about a specific issue",
         inputSchema: zodToJsonSchema(GetIssueSchema),
       },
       {
-        name: "get_commits",
+        name: "bb_get_commits",
         description: "Get commits for a repository branch",
         inputSchema: zodToJsonSchema(GetCommitsSchema),
       },
       {
-        name: "get_branches",
+        name: "bb_get_branches",
         description: "Get branches for a repository",
         inputSchema: zodToJsonSchema(GetBranchesSchema),
       },
       {
-        name: "get_file_content",
+        name: "bb_get_file_content",
         description: "Get the content of a file from a repository",
         inputSchema: zodToJsonSchema(GetFileContentSchema),
       },
       {
-        name: "search_code",
+        name: "bb_search_code",
         description: "Search for code in a repository",
         inputSchema: zodToJsonSchema(SearchCodeSchema),
       },
       {
-        name: "get_user",
+        name: "bb_get_user",
         description: "Get information about a Bitbucket user",
         inputSchema: zodToJsonSchema(GetUserSchema),
       },
       {
-        name: "get_workspace",
+        name: "bb_get_workspace",
         description: "Get information about a workspace",
         inputSchema: zodToJsonSchema(GetWorkspaceSchema),
       },
@@ -206,7 +206,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
-      case "get_repository": {
+      case "bb_get_repository": {
         const parsed = GetRepositorySchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}`;
         const repo = await makeRequest(url);
@@ -232,7 +232,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "list_repositories": {
+      case "bb_list_repositories": {
         const parsed = ListRepositoriesSchema.parse(args);
         const params = new URLSearchParams();
         if (parsed.page) params.append("page", parsed.page.toString());
@@ -261,7 +261,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_pull_requests": {
+      case "bb_get_pull_requests": {
         const parsed = GetPullRequestsSchema.parse(args);
         const params = new URLSearchParams();
         if (parsed.state) params.append("state", parsed.state);
@@ -292,7 +292,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_pull_request": {
+      case "bb_get_pull_request": {
         const parsed = GetPullRequestSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}`;
         const pr = await makeRequest(url);
@@ -314,7 +314,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_issues": {
+      case "bb_get_issues": {
         const parsed = GetIssuesSchema.parse(args);
         const params = new URLSearchParams();
         if (parsed.state) params.append("state", parsed.state);
@@ -347,7 +347,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_issue": {
+      case "bb_get_issue": {
         const parsed = GetIssueSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/issues/${parsed.issue_id}`;
         const issue = await makeRequest(url);
@@ -370,7 +370,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_commits": {
+      case "bb_get_commits": {
         const parsed = GetCommitsSchema.parse(args);
         const params = new URLSearchParams();
         if (parsed.page) params.append("page", parsed.page.toString());
@@ -402,7 +402,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_branches": {
+      case "bb_get_branches": {
         const parsed = GetBranchesSchema.parse(args);
         const params = new URLSearchParams();
         if (parsed.page) params.append("page", parsed.page.toString());
@@ -429,7 +429,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_file_content": {
+      case "bb_get_file_content": {
         const parsed = GetFileContentSchema.parse(args);
         let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src`;
         if (parsed.ref) {
@@ -463,7 +463,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "search_code": {
+      case "bb_search_code": {
         const parsed = SearchCodeSchema.parse(args);
         const params = new URLSearchParams();
         params.append("search_query", parsed.search_query);
@@ -491,7 +491,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_user": {
+      case "bb_get_user": {
         const parsed = GetUserSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/users/${parsed.username}`;
         const user = await makeRequest(url);
@@ -511,7 +511,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_workspace": {
+      case "bb_get_workspace": {
         const parsed = GetWorkspaceSchema.parse(args);
         const url = `${BITBUCKET_API_BASE}/workspaces/${parsed.workspace}`;
         const workspace = await makeRequest(url);

@@ -9,26 +9,26 @@ This is a comprehensive Model Context Protocol (MCP) server that provides **read
 ### 🔧 Core Tools (12 total)
 
 1. **Repository Management**
-   - `get_repository` - Get detailed repository information
-   - `list_repositories` - List repositories in a workspace
-   - `get_file_content` - Retrieve file contents from repositories
-   - `search_code` - Search for code within repositories
+   - `bb_get_repository` - Get detailed repository information
+   - `bb_list_repositories` - List repositories in a workspace
+   - `bb_get_file_content` - Retrieve file contents from repositories
+   - `bb_search_code` - Search for code within repositories
 
 2. **Pull Request Operations**
-   - `get_pull_requests` - List pull requests with filtering options
-   - `get_pull_request` - Get detailed PR information
+   - `bb_get_pull_requests` - List pull requests with filtering options
+   - `bb_get_pull_request` - Get detailed PR information
 
 3. **Issue Management**
-   - `get_issues` - List issues with state and kind filtering
-   - `get_issue` - Get detailed issue information
+   - `bb_get_issues` - List issues with state and kind filtering
+   - `bb_get_issue` - Get detailed issue information
 
 4. **Version Control**
-   - `get_commits` - Retrieve commit history for branches
-   - `get_branches` - List repository branches
+   - `bb_get_commits` - Retrieve commit history for branches
+   - `bb_get_branches` - List repository branches
 
 5. **User & Workspace Info**
-   - `get_user` - Get Bitbucket user information
-   - `get_workspace` - Get workspace details
+   - `bb_get_user` - Get Bitbucket user information
+   - `bb_get_workspace` - Get workspace details
 
 ## 🛡️ Security Features
 
