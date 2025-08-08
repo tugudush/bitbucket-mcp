@@ -81,6 +81,39 @@ The project includes pre-configured VS Code settings:
 2. Search for "mcp"
 3. Add MCP server configuration in settings.json:
 
+**Windows:**
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
+**macOS/Linux:**
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["/path/to/bitbucket-mcp/build/index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
+**Using workspace folder (cross-platform):**
 ```json
 {
   "mcp.servers": {

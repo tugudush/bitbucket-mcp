@@ -63,6 +63,15 @@ npm run build
 
 ## Configuration
 
+### Important Note for Windows Users
+
+When configuring file paths in JSON configuration files:
+- **Windows**: Use double backslashes `\\` or forward slashes `/` in paths
+  - Example: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"` 
+  - Or: `"C:/htdocs/bitbucket-mcp/build/index.js"`
+- **macOS/Linux**: Use forward slashes `/`
+  - Example: `"/home/user/bitbucket-mcp/build/index.js"`
+
 ### Authentication
 
 The server supports authenticated requests using Bitbucket App Passwords:
@@ -89,7 +98,7 @@ Location: `%APPDATA%\Claude\claude_desktop_config.json`
   "mcpServers": {
     "bitbucket": {
       "command": "node",
-      "args": ["/absolute/path/to/bitbucket-mcp-server/build/index.js"],
+      "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
       "env": {
         "BITBUCKET_USERNAME": "your-username",
         "BITBUCKET_APP_PASSWORD": "your-app-password"
@@ -98,6 +107,10 @@ Location: `%APPDATA%\Claude\claude_desktop_config.json`
   }
 }
 ```
+
+**Path Examples by Operating System:**
+- **Windows**: `"C:\\htdocs\\bitbucket-mcp\\build\\index.js"` (use double backslashes)
+- **macOS/Linux**: `"/absolute/path/to/bitbucket-mcp/build/index.js"` (use forward slashes)
 
 Or using npx (if installed globally):
 
@@ -146,7 +159,7 @@ Create or update your VS Code settings to include the MCP server configuration:
 - Add a new server with these details:
   - Name: `bitbucket`
   - Command: `node`
-  - Args: `["/absolute/path/to/bitbucket-mcp-server/build/index.js"]`
+  - Args: `["C:\\path\\to\\bitbucket-mcp\\build\\index.js"]` (Windows) or `["/path/to/bitbucket-mcp/build/index.js"]` (macOS/Linux)
   - Environment Variables:
     - `BITBUCKET_USERNAME`: your-username
     - `BITBUCKET_APP_PASSWORD`: your-app-password
@@ -154,12 +167,29 @@ Create or update your VS Code settings to include the MCP server configuration:
 **Option B: Using settings.json**
 Add this to your VS Code `settings.json`:
 
+**Windows:**
 ```json
 {
   "mcp.servers": {
     "bitbucket": {
       "command": "node",
-      "args": ["/absolute/path/to/bitbucket-mcp-server/build/index.js"],
+      "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
+**macOS/Linux:**
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["/absolute/path/to/bitbucket-mcp/build/index.js"],
       "env": {
         "BITBUCKET_USERNAME": "your-username",
         "BITBUCKET_APP_PASSWORD": "your-app-password"
@@ -203,12 +233,29 @@ Once configured, you can use Bitbucket tools directly in VS Code through GitHub 
 **Workspace-Specific Configuration:**
 Create a `.vscode/settings.json` file in your project root:
 
+**For this project (recommended):**
 ```json
 {
   "mcp.servers": {
     "bitbucket": {
       "command": "node",
-      "args": ["${workspaceFolder}/path/to/bitbucket-mcp-server/build/index.js"],
+      "args": ["${workspaceFolder}/build/index.js"],
+      "env": {
+        "BITBUCKET_USERNAME": "your-username",
+        "BITBUCKET_APP_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}
+```
+
+**For external installation:**
+```json
+{
+  "mcp.servers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["${workspaceFolder}/../bitbucket-mcp/build/index.js"],
       "env": {
         "BITBUCKET_USERNAME": "your-username",
         "BITBUCKET_APP_PASSWORD": "your-app-password"
