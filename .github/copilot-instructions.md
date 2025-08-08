@@ -1,57 +1,118 @@
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
-- [x] Verify that the copilot-instructions.md file in the .github directory is created.
+# Bitbucket MCP Server - AI Coding Instructions
 
-- [x] Clarify Project Requirements
-	<!-- Project Type: MCP Server for Bitbucket API, Language: TypeScript, Read-only operations -->
+## Architecture Overview
 
-- [x] Scaffold the Project
-	<!-- Created TypeScript MCP server project structure for Bitbucket API integration with read-only operations -->
+This is a **Model Context Protocol (MCP)** server providing read-only access to Bitbucket API v2.0. The architecture follows a single-file pattern with clear separation of concerns:
 
-- [x] Customize the Project
-	<!-- Created comprehensive Bitbucket MCP server with read-only tools for repositories, pull requests, issues, commits, branches, users, and workspaces -->
+- **TypeScript interfaces** (lines 15-142 in `src/index.ts`) - Strict typing for all Bitbucket API responses
+- **Zod schemas** (lines 144-229) - Input validation using `z.object()` with descriptive field documentation
+- **Tool registration** (lines 309-365) - Each tool uses `zodToJsonSchema()` for automatic schema generation
+- **Tool implementations** (lines 373-870) - Switch-case pattern with typed `makeRequest<T>()` calls
 
-- [x] Install Required Extensions
-	<!-- No additional extensions required beyond standard TypeScript/Node.js setup -->
+## Critical Development Workflow
 
-- [x] Compile the Project
-	<!-- Successfully compiled TypeScript project with npm run build -->
+### Quality Pipeline (Essential)
+```bash
+npm run ltf    # lint → format → typecheck (before commits)
+npm run build  # TypeScript compilation + executable permissions
+npm run watch  # Development mode with auto-rebuild
+```
 
-- [x] Create and Run Task
-	<!-- Created VS Code MCP configuration and build scripts -->
+### MCP Server Testing
+```bash
+# Manual server test (should show startup message)
+node build/index.js
 
-- [x] Launch the Project
-	<!-- Project ready to launch - server can be started with npm start or node build/index.js -->
+# Test with authentication
+BITBUCKET_USERNAME=user BITBUCKET_APP_PASSWORD=pass node build/index.js
+```
 
-- [x] Ensure Documentation is Complete
-	<!-- Created comprehensive README.md, EXAMPLES.md, LICENSE, .env.example, and other documentation files -->
+## Project-Specific Patterns
 
-- [ ] Install Required Extensions
-	<!-- ONLY install extensions provided mentioned in the get_project_setup_info. Skip this step otherwise and mark as completed. -->
+### 1. Tool Naming Convention
+**All tools MUST use `bb_` prefix** to avoid MCP namespace conflicts:
+```typescript
+name: 'bb_get_repository'  // ✅ Correct
+name: 'get_repository'     // ❌ Wrong - conflicts with GitHub MCP
+```
 
-- [ ] Compile the Project
-	<!--
-	Verify that all previous steps have been completed.
-	Install any missing dependencies.
-	Run diagnostics and resolve any issues.
-	Check for markdown files in project folder for relevant instructions on how to do this.
-	-->
+### 2. Authentication Pattern
+Environment-based with graceful fallback:
+```typescript
+// From src/index.ts lines 276-283
+const username = process.env.BITBUCKET_USERNAME;
+const appPassword = process.env.BITBUCKET_APP_PASSWORD;
+if (username && appPassword) {
+  const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
+  headers.Authorization = `Basic ${auth}`;
+}
+```
 
-- [ ] Create and Run Task
-	<!--
-	Verify that all previous steps have been completed.
-	Check https://code.visualstudio.com/docs/debugtest/tasks to determine if the project needs a task. If so, use the create_and_run_task to create and launch a task based on package.json, README.md, and project structure.
-	Skip this step otherwise.
-	 -->
+### 3. Error Handling Standard
+Bitbucket-specific error wrapping with API context:
+```typescript
+throw new Error(`Bitbucket API error: ${response.status} ${response.statusText} - ${errorText}`);
+```
 
-- [ ] Launch the Project
-	<!--
-	Verify that all previous steps have been completed.
-	Prompt user for debug mode, launch only if confirmed.
-	 -->
+### 4. TypeScript Interface Pattern
+**Always use strongly-typed interfaces instead of `any`**:
+```typescript
+const data = await makeRequest<BitbucketApiResponse<BitbucketRepository>>(url);
+data.values.map((repo: BitbucketRepository) => ...)  // ✅ Type-safe
+```
 
-- [ ] Ensure Documentation is Complete
-	<!--
-	Verify that all previous steps have been completed.
-	Verify that README.md and the copilot-instructions.md file in the .github directory exists and contains current project information.
-	Clean up the copilot-instructions.md file in the .github directory by removing all HTML comments.
-	 -->
+## Integration Points & Configuration
+
+### VS Code MCP Integration
+- Configuration in `.vscode/mcp.json` using stdio transport
+- Path formats: Windows supports both `C:\\path\\to\\build\\index.js` and `C:/path/to/build/index.js`
+- Use `${workspaceFolder}/build/index.js` for workspace-relative paths
+
+### Claude Desktop Integration
+- Requires `claude_desktop_config.json` modification with `mcpServers` section
+- Environment variables passed via `env` object in configuration
+
+### Cross-Platform Considerations
+- **Windows**: JSON paths handle spaces automatically, no extra escaping needed
+- **chmod +x**: Unix executable permissions set during build (npm scripts)
+- **Module type**: ES modules (`"type": "module"` in package.json)
+
+## API Response Patterns
+
+### Pagination Standard
+Most endpoints follow this pattern:
+```typescript
+const params = new URLSearchParams();
+if (parsed.page) params.append('page', parsed.page.toString());
+if (parsed.pagelen) params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+```
+
+### Response Transformation
+Convert API responses to readable text format for AI consumption:
+```typescript
+const prList = data.values
+  .map((pr: BitbucketPullRequest) => 
+    `- #${pr.id}: ${pr.title}\n` +
+    `  Author: ${pr.author.display_name}\n` +
+    `  State: ${pr.state}`
+  ).join('\n\n');
+```
+
+## Security & Limitations
+
+- **Read-only by design** - No POST/PUT/DELETE operations
+- **Rate limiting** - Respects Bitbucket API limits (no custom throttling)
+- **Private repos** - Require authentication; public repos work without credentials
+- **File size limits** - Large files may be truncated by Bitbucket API
+
+## Tool Development Guidelines
+
+When adding new tools:
+1. Create TypeScript interface for API response
+2. Define Zod schema with `.describe()` for each field
+3. Register tool with `bb_` prefix in `ListToolsRequestSchema` handler
+4. Implement in `CallToolRequestSchema` switch statement
+5. Use typed `makeRequest<YourInterface>()` calls
+6. Format response as readable text with consistent structure
+
+See existing tools like `bb_get_repository` (lines 373-405) as reference pattern.
