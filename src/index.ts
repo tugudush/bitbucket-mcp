@@ -16,7 +16,7 @@ const BITBUCKET_API_BASE = 'https://api.bitbucket.org/2.0';
 const isReadOnlyMode = process.env.BITBUCKET_READ_ONLY === 'true';
 const readOnlyTools = [
   'bb_get_repository',
-  'bb_list_repositories', 
+  'bb_list_repositories',
   'bb_list_workspaces',
   'bb_get_pull_requests',
   'bb_get_pull_request',
@@ -32,7 +32,7 @@ const readOnlyTools = [
   'bb_search_code_advanced',
   'bb_list_directory',
   'bb_get_user',
-  'bb_get_workspace'
+  'bb_get_workspace',
 ];
 
 // TypeScript interfaces for Bitbucket API responses
@@ -193,24 +193,6 @@ interface BitbucketSrcListingResponse {
   previous?: string;
 }
 
-// Enhanced interfaces for new features
-interface BitbucketFileContent {
-  type: 'commit_file';
-  path: string;
-  size: number;
-  content?: string;
-  lines?: string[];
-}
-
-interface BitbucketDirectoryItem {
-  type: BitbucketSrcItemType;
-  path: string;
-  size?: number;
-  commit?: {
-    hash: string;
-  };
-}
-
 // Input schemas for Bitbucket tools
 const GetRepositorySchema = z.object({
   workspace: z.string().describe('The workspace or username'),
@@ -352,7 +334,9 @@ const SearchCodeAdvancedSchema = z.object({
   type: z
     .enum(['code', 'file'])
     .optional()
-    .describe('Search type: "code" for content search, "file" for filename search'),
+    .describe(
+      'Search type: "code" for content search, "file" for filename search'
+    ),
   page: z.number().optional().describe('Page number for pagination'),
   pagelen: z.number().optional().describe('Number of items per page (max 100)'),
 });
@@ -479,7 +463,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'bb_list_workspaces',
-      description: 'List all accessible workspaces for discovery and exploration',
+      description:
+        'List all accessible workspaces for discovery and exploration',
       inputSchema: zodToJsonSchema(ListWorkspacesSchema),
     },
     {
@@ -525,12 +510,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'bb_get_file_content',
-      description: 'Get the content of a file from a repository with pagination support',
+      description:
+        'Get the content of a file from a repository with pagination support',
       inputSchema: zodToJsonSchema(GetFileContentSchema),
     },
     {
       name: 'bb_browse_repository',
-      description: 'Browse files and directories in a repository to explore structure',
+      description:
+        'Browse files and directories in a repository to explore structure',
       inputSchema: zodToJsonSchema(BrowseRepositorySchema),
     },
     {
@@ -540,7 +527,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'bb_search_code_advanced',
-      description: 'Advanced search across workspaces and repositories with filtering',
+      description:
+        'Advanced search across workspaces and repositories with filtering',
       inputSchema: zodToJsonSchema(SearchCodeAdvancedSchema),
     },
     {
@@ -562,7 +550,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   ];
 
   // Filter tools based on read-only mode
-  const availableTools = isReadOnlyMode 
+  const availableTools = isReadOnlyMode
     ? allTools.filter(tool => readOnlyTools.includes(tool.name))
     : allTools;
 
@@ -979,15 +967,15 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
         const content = await response.text();
         const lines = content.split('\n');
-        
+
         // Apply pagination if specified
         const start = parsed.start ? Math.max(1, parsed.start) : 1;
         const limit = parsed.limit ? Math.min(parsed.limit, 10000) : 1000;
         const endLine = Math.min(start + limit - 1, lines.length);
-        
+
         const paginatedLines = lines.slice(start - 1, endLine);
         const paginatedContent = paginatedLines.join('\n');
-        
+
         const totalLines = lines.length;
         const showingLines = paginatedLines.length;
         const isComplete = endLine >= totalLines;
@@ -1177,7 +1165,8 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
         const url = `${BITBUCKET_API_BASE}/workspaces?${params}`;
-        const data = await makeRequest<BitbucketApiResponse<BitbucketWorkspace>>(url);
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketWorkspace>>(url);
 
         const workspaceList = data.values
           .map(
@@ -1207,10 +1196,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const ref = parsed.ref || 'HEAD';
         const path = parsed.path || '';
         const limit = Math.min(parsed.limit || 50, 100);
-        
+
         const params = new URLSearchParams();
         if (parsed.ref) params.append('at', parsed.ref);
-        
+
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${ref}/${path}?${params}`;
         const data = await makeRequest<BitbucketSrcListingResponse>(url);
 
@@ -1257,17 +1246,18 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           // We'll use the repository search as a fallback and note the limitation
           throw new Error(
             'Workspace-wide search is not supported by Bitbucket Cloud API. ' +
-            'Please specify both workspace and repo_slug for repository-specific search.'
+              'Please specify both workspace and repo_slug for repository-specific search.'
           );
         } else {
           throw new Error(
             'Advanced search requires at least a workspace parameter. ' +
-            'Global search across all accessible repositories is not supported by Bitbucket Cloud API.'
+              'Global search across all accessible repositories is not supported by Bitbucket Cloud API.'
           );
         }
 
-        const data = await makeRequest<BitbucketApiResponse<BitbucketSearchResult>>(url);
-        
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketSearchResult>>(url);
+
         const resultList = data.values
           .map(
             (result: BitbucketSearchResult) =>
