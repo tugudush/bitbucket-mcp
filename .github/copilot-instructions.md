@@ -7,15 +7,18 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 - **TypeScript interfaces** (lines 15-142 in `src/index.ts`) - Strict typing for all Bitbucket API responses
 - **Zod schemas** (lines 144-229) - Input validation using `z.object()` with descriptive field documentation
 - **Tool registration** (lines 309-365) - Each tool uses `zodToJsonSchema()` for automatic schema generation
-- **Tool implementations** (lines 373-870) - Switch-case pattern with typed `makeRequest<T>()` calls
+- **Tool implementations** (lines 373-900+) - Switch-case pattern with typed `makeRequest<T>()` calls
+- **Authentication system** - Supports both API tokens (recommended) and App Passwords (legacy)
+- **Branch handling** - Uses `?at=branch` for listings and `/src/{ref}/{file}` for file content
 
 ## Critical Development Workflow
 
 ### Quality Pipeline (Essential)
 ```bash
-npm run ltf    # lint → format → typecheck (before commits)
-npm run build  # TypeScript compilation + executable permissions
-npm run watch  # Development mode with auto-rebuild
+npm run ltf     # lint → typecheck → format (recommended before commits)
+npm run ltfb    # lint → typecheck → format → build (full pipeline)
+npm run build   # TypeScript compilation + executable permissions
+npm run watch   # Development mode with auto-rebuild
 ```
 
 ### MCP Server Testing
@@ -23,7 +26,10 @@ npm run watch  # Development mode with auto-rebuild
 # Manual server test (should show startup message)
 node build/index.js
 
-# Test with authentication
+# Test with API token authentication (recommended)
+BITBUCKET_API_TOKEN=token BITBUCKET_EMAIL=email node build/index.js
+
+# Test with legacy App Password authentication  
 BITBUCKET_USERNAME=user BITBUCKET_APP_PASSWORD=pass node build/index.js
 ```
 
@@ -126,3 +132,19 @@ When adding new tools:
 6. Format response as readable text with consistent structure
 
 See existing tools like `bb_get_repository` (lines 373-405) as reference pattern.
+
+## Recent Fixes & Patterns
+
+### Branch Handling (Fixed 2025-08)
+- **Directory listings**: Use `?at=branch` query parameter
+- **File content**: Use `/src/{ref}/{file_path}` URL pattern
+- **Avoid**: `/src/{file_path}?at=branch` (causes 404s)
+
+### File Content URL Pattern (Fixed 2025-08)  
+```typescript
+// ✅ Correct pattern that works
+const url = `${BITBUCKET_API_BASE}/repositories/${workspace}/${repo_slug}/src/${ref}/${file_path}`;
+
+// ❌ Old pattern that failed
+const url = `${BITBUCKET_API_BASE}/repositories/${workspace}/${repo_slug}/src/${file_path}?at=${ref}`;
+```

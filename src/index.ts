@@ -142,6 +142,32 @@ interface BitbucketApiResponse<T> {
   values: T[];
   page?: number;
   size: number;
+  next?: string;
+  previous?: string;
+  pagelen?: number;
+}
+
+// Items returned by the Bitbucket
+// /repositories/{workspace}/{repo_slug}/src/{ref}/{path} endpoint
+type BitbucketSrcItemType =
+  | 'commit_file'
+  | 'commit_directory'
+  | 'commit_submodule'
+  | 'commit_link';
+
+interface BitbucketSrcItem {
+  type: BitbucketSrcItemType;
+  path: string;
+  size?: number; // only for files
+}
+
+interface BitbucketSrcListingResponse {
+  values: BitbucketSrcItem[];
+  page?: number;
+  size?: number;
+  pagelen?: number;
+  next?: string;
+  previous?: string;
 }
 
 // Input schemas for Bitbucket tools
@@ -247,6 +273,25 @@ const GetFileContentSchema = z.object({
     .describe('Branch, tag, or commit hash (defaults to main branch)'),
 });
 
+const ListDirectorySchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  path: z
+    .string()
+    .optional()
+    .describe('Directory path within the repository (default: repo root)'),
+  ref: z
+    .string()
+    .optional()
+    .describe('Branch, tag, or commit hash (defaults to main branch)'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  recursive: z
+    .boolean()
+    .optional()
+    .describe('When true, recursively lists all files under the path'),
+});
+
 const SearchCodeSchema = z.object({
   workspace: z.string().describe('The workspace or username'),
   repo_slug: z.string().describe('The repository name'),
@@ -268,6 +313,14 @@ async function makeRequest<T = unknown>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Enforce read-only behavior: block any non-GET methods at runtime
+  const requestedMethod = (options.method || 'GET').toString().toUpperCase();
+  if (requestedMethod !== 'GET') {
+    throw new Error(
+      `Write operations are disabled: attempted ${requestedMethod} ${url}. This MCP server allows only GET requests.`
+    );
+  }
+
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'User-Agent': 'bitbucket-mcp-server/1.0.0',
@@ -294,6 +347,8 @@ async function makeRequest<T = unknown>(
 
   const response = await fetch(url, {
     ...options,
+    // Force GET to prevent accidental method overrides downstream
+    method: 'GET',
     headers,
   });
 
@@ -384,6 +439,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: 'bb_search_code',
         description: 'Search for code in a repository',
         inputSchema: zodToJsonSchema(SearchCodeSchema),
+      },
+      {
+        name: 'bb_list_directory',
+        description:
+          'List files and folders in a repository path (optionally recursive)',
+        inputSchema: zodToJsonSchema(ListDirectorySchema),
       },
       {
         name: 'bb_get_user',
@@ -760,17 +821,36 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
       case 'bb_get_file_content': {
         const parsed = GetFileContentSchema.parse(args);
-        let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src`;
-        if (parsed.ref) {
-          url += `/${parsed.ref}`;
+
+        // Build URL with ref in path: /repositories/{workspace}/{repo_slug}/src/{ref}/{file_path}
+        const ref = parsed.ref || 'HEAD';
+        let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${ref}/${parsed.file_path}`;
+
+        // We need to use a custom fetch with authentication since makeRequest expects JSON
+        const headers: Record<string, string> = {
+          Accept: 'text/plain',
+          'User-Agent': 'bitbucket-mcp-server/1.0.0',
+        };
+
+        // Add authentication if available (copied from makeRequest logic)
+        const apiToken = process.env.BITBUCKET_API_TOKEN;
+        const email = process.env.BITBUCKET_EMAIL;
+        const username = process.env.BITBUCKET_USERNAME;
+        const appPassword = process.env.BITBUCKET_APP_PASSWORD;
+
+        if (apiToken && email) {
+          const auth = Buffer.from(`${email}:${apiToken}`).toString('base64');
+          headers.Authorization = `Basic ${auth}`;
+        } else if (username && appPassword) {
+          const auth = Buffer.from(`${username}:${appPassword}`).toString(
+            'base64'
+          );
+          headers.Authorization = `Basic ${auth}`;
         }
-        url += `/${parsed.file_path}`;
 
         const response = await fetch(url, {
-          headers: {
-            Accept: 'text/plain',
-            'User-Agent': 'bitbucket-mcp-server/1.0.0',
-          },
+          method: 'GET',
+          headers,
         });
 
         if (!response.ok) {
@@ -790,6 +870,92 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
                 `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
                 `Reference: ${parsed.ref || 'default branch'}\n\n` +
                 `Content:\n\`\`\`\n${content}\n\`\`\``,
+            },
+          ],
+        };
+      }
+
+      case 'bb_list_directory': {
+        const parsed = ListDirectorySchema.parse(args);
+
+        const buildListingUrl = (page?: number) => {
+          const params = new URLSearchParams();
+          if (parsed.ref) params.append('at', parsed.ref);
+          if (page) params.append('page', page.toString());
+          if (parsed.pagelen)
+            params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+
+          let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src`;
+          if (parsed.path) url += `/${parsed.path.replace(/^\/+|\/+$/g, '')}`;
+          if (params.toString()) url += `?${params}`;
+          return url;
+        };
+
+        async function listOneLevel() {
+          const items: BitbucketSrcItem[] = [];
+          let page = parsed.page;
+          while (true) {
+            const url = buildListingUrl(page);
+            // The Bitbucket "src" endpoint returns a listing object with { values: BitbucketSrcItem[], ... }
+            const data = await makeRequest<BitbucketSrcListingResponse>(url);
+
+            if (data && data.values && Array.isArray(data.values)) {
+              items.push(...data.values);
+              if (!data.next) break;
+              // Advance to next page if server provided a next link
+              page = (page || 1) + 1;
+              continue;
+            }
+
+            // No more data or unexpected response format
+            break;
+          }
+          return items;
+        }
+
+        let results: BitbucketSrcItem[] = [];
+        if (parsed.recursive) {
+          // BFS traversal starting at the provided path
+          const queue: string[] = [parsed.path || ''];
+          while (queue.length) {
+            const current = queue.shift()!;
+            const originalPath = parsed.path;
+            // Temporarily set path for this iteration
+            (parsed.path as string | undefined) = current;
+            const items = await listOneLevel();
+            results.push(...items.filter(i => i.type !== 'commit_directory'));
+            const dirs = items.filter(i => i.type === 'commit_directory');
+            for (const d of dirs) {
+              queue.push(d.path);
+            }
+            parsed.path = originalPath;
+          }
+        } else {
+          results = await listOneLevel();
+        }
+
+        // Render a friendly text output
+        const headerPath = parsed.path ? parsed.path.replace(/^\/+/, '') : '/';
+        const lines = results
+          .sort((a, b) => a.path.localeCompare(b.path))
+          .map(item => {
+            const name = item.path.split('/').pop() || item.path;
+            if (item.type === 'commit_directory') {
+              return `📁 ${name}/  - ${item.path}`;
+            }
+            const size = item.size != null ? ` (${item.size} bytes)` : '';
+            return `📄 ${name}${size}  - ${item.path}`;
+          })
+          .join('\n');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Directory listing for ${parsed.workspace}/${parsed.repo_slug} at ${parsed.ref || 'default branch'}:\n` +
+                `Path: ${headerPath}  •  Items: ${results.length}\n` +
+                `${lines || '(empty)'}`,
             },
           ],
         };
@@ -893,6 +1059,24 @@ async function runServer() {
   console.error('Bitbucket MCP Server running on stdio');
   console.error(
     'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
+  );
+
+  // Debug: Log environment variables
+  console.error('Debug - Environment variables:');
+  console.error(
+    '  BITBUCKET_API_TOKEN:',
+    process.env.BITBUCKET_API_TOKEN
+      ? 'SET (length: ' + process.env.BITBUCKET_API_TOKEN.length + ')'
+      : 'NOT SET'
+  );
+  console.error('  BITBUCKET_EMAIL:', process.env.BITBUCKET_EMAIL || 'NOT SET');
+  console.error(
+    '  BITBUCKET_USERNAME:',
+    process.env.BITBUCKET_USERNAME || 'NOT SET'
+  );
+  console.error(
+    '  BITBUCKET_APP_PASSWORD:',
+    process.env.BITBUCKET_APP_PASSWORD ? 'SET' : 'NOT SET'
   );
 }
 
