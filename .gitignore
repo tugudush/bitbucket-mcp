@@ -96,7 +96,7 @@ jspm_packages/
 .serverless/
 
 # IDE/Editor files
-# .vscode/ - VS Code configuration is intentionally included for this project
+.vscode/
 .idea/
 *.swp
 *.swo

@@ -216,7 +216,22 @@ This MCP server is fully compatible with VS Code GitHub Copilot, enabling you to
    - Search for "MCP" or "Model Context Protocol" in the Extensions marketplace
    - Install any official MCP extension for VS Code
 
-#### Step 2: Configure MCP Server in VS Code
+#### Step 2: Set Up VS Code Configuration
+
+**Option A: Use the Provided Template (Recommended)**
+
+1. Copy the VS Code template to your workspace:
+   ```bash
+   cp -r .vscode-template .vscode
+   ```
+
+2. Edit `.vscode/settings.json` and `.vscode/mcp.json`:
+   - Replace `your-api-token` with your actual Bitbucket API token
+   - Replace `your-atlassian-email` with your Atlassian account email
+
+3. The `.vscode` directory is in `.gitignore` to protect your credentials
+
+**Option B: Manual Configuration**
 
 Create or update your VS Code settings to include the MCP server configuration:
 

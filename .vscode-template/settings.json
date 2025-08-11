@@ -5,8 +5,8 @@
       "command": "node",
       "args": ["${workspaceFolder}/build/index.js"],
       "env": {
-        "BITBUCKET_USERNAME": "your-username",
-        "BITBUCKET_APP_PASSWORD": "your-app-password"
+        "BITBUCKET_API_TOKEN": "your-api-token",
+        "BITBUCKET_EMAIL": "your-atlassian-email"
       },
       "description": "Bitbucket MCP Server - Read-only access to Bitbucket repositories, PRs, issues, and more"
     }
