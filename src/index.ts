@@ -12,6 +12,29 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 // Bitbucket API configuration
 const BITBUCKET_API_BASE = 'https://api.bitbucket.org/2.0';
 
+// Read-only mode configuration
+const isReadOnlyMode = process.env.BITBUCKET_READ_ONLY === 'true';
+const readOnlyTools = [
+  'bb_get_repository',
+  'bb_list_repositories', 
+  'bb_list_workspaces',
+  'bb_get_pull_requests',
+  'bb_get_pull_request',
+  'bb_get_pull_request_comments',
+  'bb_get_pull_request_activity',
+  'bb_get_issues',
+  'bb_get_issue',
+  'bb_get_commits',
+  'bb_get_branches',
+  'bb_get_file_content',
+  'bb_browse_repository',
+  'bb_search_code',
+  'bb_search_code_advanced',
+  'bb_list_directory',
+  'bb_get_user',
+  'bb_get_workspace'
+];
+
 // TypeScript interfaces for Bitbucket API responses
 interface BitbucketUser {
   display_name: string;
@@ -170,6 +193,24 @@ interface BitbucketSrcListingResponse {
   previous?: string;
 }
 
+// Enhanced interfaces for new features
+interface BitbucketFileContent {
+  type: 'commit_file';
+  path: string;
+  size: number;
+  content?: string;
+  lines?: string[];
+}
+
+interface BitbucketDirectoryItem {
+  type: BitbucketSrcItemType;
+  path: string;
+  size?: number;
+  commit?: {
+    hash: string;
+  };
+}
+
 // Input schemas for Bitbucket tools
 const GetRepositorySchema = z.object({
   workspace: z.string().describe('The workspace or username'),
@@ -271,6 +312,54 @@ const GetFileContentSchema = z.object({
     .string()
     .optional()
     .describe('Branch, tag, or commit hash (defaults to main branch)'),
+  start: z
+    .number()
+    .optional()
+    .describe('Starting line number for pagination (1-based, default: 1)'),
+  limit: z
+    .number()
+    .optional()
+    .describe('Maximum number of lines to return (default: 1000, max: 10000)'),
+});
+
+const BrowseRepositorySchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  path: z
+    .string()
+    .optional()
+    .describe('Directory path within the repository (default: repo root)'),
+  ref: z
+    .string()
+    .optional()
+    .describe('Branch, tag, or commit hash (defaults to main branch)'),
+  limit: z
+    .number()
+    .optional()
+    .describe('Maximum number of items to return (default: 50, max: 100)'),
+});
+
+const SearchCodeAdvancedSchema = z.object({
+  search_query: z.string().describe('The search query'),
+  workspace: z
+    .string()
+    .optional()
+    .describe('Limit search to specific workspace'),
+  repo_slug: z
+    .string()
+    .optional()
+    .describe('Limit search to specific repository (requires workspace)'),
+  type: z
+    .enum(['code', 'file'])
+    .optional()
+    .describe('Search type: "code" for content search, "file" for filename search'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+});
+
+const ListWorkspacesSchema = z.object({
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
 });
 
 const ListDirectorySchema = z.object({
@@ -377,92 +466,121 @@ const server = new Server(
 
 // Tool definitions
 server.setRequestHandler(ListToolsRequestSchema, async () => {
+  const allTools = [
+    {
+      name: 'bb_get_repository',
+      description: 'Get detailed information about a specific repository',
+      inputSchema: zodToJsonSchema(GetRepositorySchema),
+    },
+    {
+      name: 'bb_list_repositories',
+      description: 'List repositories in a workspace',
+      inputSchema: zodToJsonSchema(ListRepositoriesSchema),
+    },
+    {
+      name: 'bb_list_workspaces',
+      description: 'List all accessible workspaces for discovery and exploration',
+      inputSchema: zodToJsonSchema(ListWorkspacesSchema),
+    },
+    {
+      name: 'bb_get_pull_requests',
+      description: 'Get pull requests for a repository',
+      inputSchema: zodToJsonSchema(GetPullRequestsSchema),
+    },
+    {
+      name: 'bb_get_pull_request',
+      description: 'Get detailed information about a specific pull request',
+      inputSchema: zodToJsonSchema(GetPullRequestSchema),
+    },
+    {
+      name: 'bb_get_pull_request_comments',
+      description: 'Get comments for a specific pull request',
+      inputSchema: zodToJsonSchema(GetPullRequestCommentsSchema),
+    },
+    {
+      name: 'bb_get_pull_request_activity',
+      description:
+        'Get activity (reviews, approvals, comments) for a specific pull request',
+      inputSchema: zodToJsonSchema(GetPullRequestActivitySchema),
+    },
+    {
+      name: 'bb_get_issues',
+      description: 'Get issues for a repository',
+      inputSchema: zodToJsonSchema(GetIssuesSchema),
+    },
+    {
+      name: 'bb_get_issue',
+      description: 'Get detailed information about a specific issue',
+      inputSchema: zodToJsonSchema(GetIssueSchema),
+    },
+    {
+      name: 'bb_get_commits',
+      description: 'Get commits for a repository branch',
+      inputSchema: zodToJsonSchema(GetCommitsSchema),
+    },
+    {
+      name: 'bb_get_branches',
+      description: 'Get branches for a repository',
+      inputSchema: zodToJsonSchema(GetBranchesSchema),
+    },
+    {
+      name: 'bb_get_file_content',
+      description: 'Get the content of a file from a repository with pagination support',
+      inputSchema: zodToJsonSchema(GetFileContentSchema),
+    },
+    {
+      name: 'bb_browse_repository',
+      description: 'Browse files and directories in a repository to explore structure',
+      inputSchema: zodToJsonSchema(BrowseRepositorySchema),
+    },
+    {
+      name: 'bb_search_code',
+      description: 'Search for code in a repository',
+      inputSchema: zodToJsonSchema(SearchCodeSchema),
+    },
+    {
+      name: 'bb_search_code_advanced',
+      description: 'Advanced search across workspaces and repositories with filtering',
+      inputSchema: zodToJsonSchema(SearchCodeAdvancedSchema),
+    },
+    {
+      name: 'bb_list_directory',
+      description:
+        'List files and folders in a repository path (optionally recursive)',
+      inputSchema: zodToJsonSchema(ListDirectorySchema),
+    },
+    {
+      name: 'bb_get_user',
+      description: 'Get information about a Bitbucket user',
+      inputSchema: zodToJsonSchema(GetUserSchema),
+    },
+    {
+      name: 'bb_get_workspace',
+      description: 'Get information about a workspace',
+      inputSchema: zodToJsonSchema(GetWorkspaceSchema),
+    },
+  ];
+
+  // Filter tools based on read-only mode
+  const availableTools = isReadOnlyMode 
+    ? allTools.filter(tool => readOnlyTools.includes(tool.name))
+    : allTools;
+
   return {
-    tools: [
-      {
-        name: 'bb_get_repository',
-        description: 'Get detailed information about a specific repository',
-        inputSchema: zodToJsonSchema(GetRepositorySchema),
-      },
-      {
-        name: 'bb_list_repositories',
-        description: 'List repositories in a workspace',
-        inputSchema: zodToJsonSchema(ListRepositoriesSchema),
-      },
-      {
-        name: 'bb_get_pull_requests',
-        description: 'Get pull requests for a repository',
-        inputSchema: zodToJsonSchema(GetPullRequestsSchema),
-      },
-      {
-        name: 'bb_get_pull_request',
-        description: 'Get detailed information about a specific pull request',
-        inputSchema: zodToJsonSchema(GetPullRequestSchema),
-      },
-      {
-        name: 'bb_get_pull_request_comments',
-        description: 'Get comments for a specific pull request',
-        inputSchema: zodToJsonSchema(GetPullRequestCommentsSchema),
-      },
-      {
-        name: 'bb_get_pull_request_activity',
-        description:
-          'Get activity (reviews, approvals, comments) for a specific pull request',
-        inputSchema: zodToJsonSchema(GetPullRequestActivitySchema),
-      },
-      {
-        name: 'bb_get_issues',
-        description: 'Get issues for a repository',
-        inputSchema: zodToJsonSchema(GetIssuesSchema),
-      },
-      {
-        name: 'bb_get_issue',
-        description: 'Get detailed information about a specific issue',
-        inputSchema: zodToJsonSchema(GetIssueSchema),
-      },
-      {
-        name: 'bb_get_commits',
-        description: 'Get commits for a repository branch',
-        inputSchema: zodToJsonSchema(GetCommitsSchema),
-      },
-      {
-        name: 'bb_get_branches',
-        description: 'Get branches for a repository',
-        inputSchema: zodToJsonSchema(GetBranchesSchema),
-      },
-      {
-        name: 'bb_get_file_content',
-        description: 'Get the content of a file from a repository',
-        inputSchema: zodToJsonSchema(GetFileContentSchema),
-      },
-      {
-        name: 'bb_search_code',
-        description: 'Search for code in a repository',
-        inputSchema: zodToJsonSchema(SearchCodeSchema),
-      },
-      {
-        name: 'bb_list_directory',
-        description:
-          'List files and folders in a repository path (optionally recursive)',
-        inputSchema: zodToJsonSchema(ListDirectorySchema),
-      },
-      {
-        name: 'bb_get_user',
-        description: 'Get information about a Bitbucket user',
-        inputSchema: zodToJsonSchema(GetUserSchema),
-      },
-      {
-        name: 'bb_get_workspace',
-        description: 'Get information about a workspace',
-        inputSchema: zodToJsonSchema(GetWorkspaceSchema),
-      },
-    ],
+    tools: availableTools,
   };
 });
 
 // Tool implementations
 server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params;
+
+  // Check if tool is allowed in read-only mode
+  if (isReadOnlyMode && !readOnlyTools.includes(name)) {
+    throw new Error(
+      `Tool ${name} is not available in read-only mode. Set BITBUCKET_READ_ONLY=false to enable all tools.`
+    );
+  }
 
   try {
     switch (name) {
@@ -860,6 +978,19 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         }
 
         const content = await response.text();
+        const lines = content.split('\n');
+        
+        // Apply pagination if specified
+        const start = parsed.start ? Math.max(1, parsed.start) : 1;
+        const limit = parsed.limit ? Math.min(parsed.limit, 10000) : 1000;
+        const endLine = Math.min(start + limit - 1, lines.length);
+        
+        const paginatedLines = lines.slice(start - 1, endLine);
+        const paginatedContent = paginatedLines.join('\n');
+        
+        const totalLines = lines.length;
+        const showingLines = paginatedLines.length;
+        const isComplete = endLine >= totalLines;
 
         return {
           content: [
@@ -868,8 +999,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
               text:
                 `File: ${parsed.file_path}\n` +
                 `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
-                `Reference: ${parsed.ref || 'default branch'}\n\n` +
-                `Content:\n\`\`\`\n${content}\n\`\`\``,
+                `Reference: ${parsed.ref || 'default branch'}\n` +
+                `Lines: ${start}-${endLine} of ${totalLines} (showing ${showingLines} lines)\n` +
+                `Complete: ${isComplete ? 'Yes' : 'No'}\n\n` +
+                `Content:\n\`\`\`\n${paginatedContent}\n\`\`\``,
             },
           ],
         };
@@ -1036,6 +1169,129 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         };
       }
 
+      case 'bb_list_workspaces': {
+        const parsed = ListWorkspacesSchema.parse(args);
+        const params = new URLSearchParams();
+        if (parsed.page) params.append('page', parsed.page.toString());
+        if (parsed.pagelen)
+          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+
+        const url = `${BITBUCKET_API_BASE}/workspaces?${params}`;
+        const data = await makeRequest<BitbucketApiResponse<BitbucketWorkspace>>(url);
+
+        const workspaceList = data.values
+          .map(
+            (workspace: BitbucketWorkspace) =>
+              `- ${workspace.slug}: ${workspace.name}\n` +
+              `  UUID: ${workspace.uuid}\n` +
+              `  Type: ${workspace.type}\n` +
+              `  Created: ${workspace.created_on}`
+          )
+          .join('\n\n');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Accessible Workspaces:\n\n${workspaceList}\n\n` +
+                `Page: ${data.page || 1}\n` +
+                `Total: ${data.size} workspaces`,
+            },
+          ],
+        };
+      }
+
+      case 'bb_browse_repository': {
+        const parsed = BrowseRepositorySchema.parse(args);
+        const ref = parsed.ref || 'HEAD';
+        const path = parsed.path || '';
+        const limit = Math.min(parsed.limit || 50, 100);
+        
+        const params = new URLSearchParams();
+        if (parsed.ref) params.append('at', parsed.ref);
+        
+        const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${ref}/${path}?${params}`;
+        const data = await makeRequest<BitbucketSrcListingResponse>(url);
+
+        const itemList = data.values
+          .slice(0, limit)
+          .map((item: BitbucketSrcItem) => {
+            const isDir = item.type === 'commit_directory';
+            const size = item.size ? ` (${item.size} bytes)` : '';
+            const icon = isDir ? '📁' : '📄';
+            return `${icon} ${item.path}${size}`;
+          })
+          .join('\n');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
+                `Path: ${path || '/'}\n` +
+                `Reference: ${parsed.ref || 'default branch'}\n` +
+                `Showing: ${Math.min(data.values.length, limit)} of ${data.values.length} items\n\n` +
+                `Contents:\n${itemList}`,
+            },
+          ],
+        };
+      }
+
+      case 'bb_search_code_advanced': {
+        const parsed = SearchCodeAdvancedSchema.parse(args);
+        const params = new URLSearchParams();
+        params.append('search_query', parsed.search_query);
+        if (parsed.page) params.append('page', parsed.page.toString());
+        if (parsed.pagelen)
+          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+
+        let url: string;
+        if (parsed.workspace && parsed.repo_slug) {
+          // Search within specific repository
+          url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/search/code?${params}`;
+        } else if (parsed.workspace) {
+          // Search across all repositories in workspace
+          // Note: Bitbucket Cloud doesn't have a direct workspace-wide search API
+          // We'll use the repository search as a fallback and note the limitation
+          throw new Error(
+            'Workspace-wide search is not supported by Bitbucket Cloud API. ' +
+            'Please specify both workspace and repo_slug for repository-specific search.'
+          );
+        } else {
+          throw new Error(
+            'Advanced search requires at least a workspace parameter. ' +
+            'Global search across all accessible repositories is not supported by Bitbucket Cloud API.'
+          );
+        }
+
+        const data = await makeRequest<BitbucketApiResponse<BitbucketSearchResult>>(url);
+        
+        const resultList = data.values
+          .map(
+            (result: BitbucketSearchResult) =>
+              `- File: ${result.file.path}\n` +
+              `  Line ${result.line_number}: ${result.content_match_text.trim()}`
+          )
+          .join('\n\n');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Advanced Search Results for "${parsed.search_query}"\n` +
+                `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
+                `Type: ${parsed.type || 'code'}\n\n` +
+                `${resultList}\n\n` +
+                `Page: ${data.page || 1}\n` +
+                `Total: ${data.size} results`,
+            },
+          ],
+        };
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -1057,6 +1313,9 @@ async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Bitbucket MCP Server running on stdio');
+  console.error(
+    `Mode: ${isReadOnlyMode ? 'READ-ONLY' : 'FULL ACCESS'} (BITBUCKET_READ_ONLY=${process.env.BITBUCKET_READ_ONLY || 'false'})`
+  );
   console.error(
     'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
   );
