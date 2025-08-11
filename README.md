@@ -95,8 +95,9 @@ The server supports authenticated requests using Bitbucket API tokens or App Pas
 **Recommended: API Tokens (replacing App Passwords as of September 2025)**
 
 1. Create an API Token in your Bitbucket account settings
-2. Set the environment variable:
+2. Set the environment variables:
    - `BITBUCKET_API_TOKEN` - Your API token
+   - `BITBUCKET_EMAIL` - Your Atlassian account email address
 
 **Legacy: App Passwords (being deprecated September 9, 2025)**
 
@@ -126,7 +127,8 @@ Location: `%APPDATA%\Claude\claude_desktop_config.json`
       "command": "node",
       "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
       "env": {
-        "BITBUCKET_API_TOKEN": "your-api-token"
+        "BITBUCKET_API_TOKEN": "your-api-token",
+        "BITBUCKET_EMAIL": "your-atlassian-email"
       }
     }
   }
@@ -245,7 +247,8 @@ Add this to your VS Code `settings.json`:
       "command": "node",
       "args": ["C:\\htdocs\\bitbucket-mcp\\build\\index.js"],
       "env": {
-        "BITBUCKET_API_TOKEN": "your-api-token"
+        "BITBUCKET_API_TOKEN": "your-api-token",
+        "BITBUCKET_EMAIL": "your-atlassian-email"
       }
     }
   }
@@ -278,8 +281,8 @@ Add this to your VS Code `settings.json`:
       "command": "node",
       "args": ["C:\\Program Files\\bitbucket-mcp\\build\\index.js"],
       "env": {
-        "BITBUCKET_USERNAME": "your-username",
-        "BITBUCKET_APP_PASSWORD": "your-app-password"
+        "BITBUCKET_API_TOKEN": "your-api-token",
+        "BITBUCKET_EMAIL": "your-atlassian-email"
       }
     }
   }
@@ -295,8 +298,8 @@ Add this to your VS Code `settings.json`:
       "command": "node",
       "args": ["/absolute/path/to/bitbucket-mcp/build/index.js"],
       "env": {
-        "BITBUCKET_USERNAME": "your-username",
-        "BITBUCKET_APP_PASSWORD": "your-app-password"
+        "BITBUCKET_API_TOKEN": "your-api-token",
+        "BITBUCKET_EMAIL": "your-atlassian-email"
       }
     }
   }

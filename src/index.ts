@@ -275,14 +275,17 @@ async function makeRequest<T = unknown>(
   };
 
   // Add authentication if available
-  // Priority: API Token (Bearer auth) > App Password (Basic auth)
+  // Priority: API Token (Basic auth with email) > App Password (Basic auth with username)
   const apiToken = process.env.BITBUCKET_API_TOKEN;
+  const email = process.env.BITBUCKET_EMAIL;
   const username = process.env.BITBUCKET_USERNAME;
   const appPassword = process.env.BITBUCKET_APP_PASSWORD;
 
-  if (apiToken) {
-    // Use API Token with Bearer authentication (recommended)
-    headers.Authorization = `Bearer ${apiToken}`;
+  if (apiToken && email) {
+    // Use API Token with Basic authentication (recommended)
+    // Username should be your Atlassian email, password is the API token
+    const auth = Buffer.from(`${email}:${apiToken}`).toString('base64');
+    headers.Authorization = `Basic ${auth}`;
   } else if (username && appPassword) {
     // Fallback to App Password with Basic authentication (legacy)
     const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
@@ -889,7 +892,7 @@ async function runServer() {
   await server.connect(transport);
   console.error('Bitbucket MCP Server running on stdio');
   console.error(
-    'Note: Set BITBUCKET_API_TOKEN (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
+    'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
   );
 }
 

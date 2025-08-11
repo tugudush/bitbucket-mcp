@@ -29,6 +29,7 @@ BITBUCKET_APP_PASSWORD=your-app-password
 **With:**
 ```bash
 BITBUCKET_API_TOKEN=your-api-token
+BITBUCKET_EMAIL=your-atlassian-email
 ```
 
 ### 3. Update Configuration Files
@@ -39,7 +40,8 @@ BITBUCKET_API_TOKEN=your-api-token
   "mcp.servers": {
     "bitbucket": {
       "env": {
-        "BITBUCKET_API_TOKEN": "your-api-token"
+        "BITBUCKET_API_TOKEN": "your-api-token",
+        "BITBUCKET_EMAIL": "your-atlassian-email"
       }
     }
   }
@@ -52,7 +54,8 @@ BITBUCKET_API_TOKEN=your-api-token
   "mcpServers": {
     "bitbucket": {
       "env": {
-        "BITBUCKET_API_TOKEN": "your-api-token"
+        "BITBUCKET_API_TOKEN": "your-api-token",
+        "BITBUCKET_EMAIL": "your-atlassian-email"
       }
     }
   }
@@ -63,26 +66,30 @@ BITBUCKET_API_TOKEN=your-api-token
 
 The server will continue to support App Passwords for backward compatibility:
 
-- **Priority**: API Token (Bearer auth) is checked first
-- **Fallback**: App Password (Basic auth) is used if no API token is provided
+- **Priority**: API Token (Basic auth with email) is checked first
+- **Fallback**: App Password (Basic auth with username) is used if no API token is provided
 - **Both**: You can have both configured - API token will take precedence
 
 ## Authentication Flow
 
 ```typescript
 // Priority order:
-if (BITBUCKET_API_TOKEN) {
-  // Use Bearer authentication (recommended)
-  headers.Authorization = `Bearer ${apiToken}`;
+if (BITBUCKET_API_TOKEN && BITBUCKET_EMAIL) {
+  // Use Basic authentication with email (recommended)
+  headers.Authorization = `Basic ${base64(email:apiToken)}`;
 } else if (BITBUCKET_USERNAME && BITBUCKET_APP_PASSWORD) {
-  // Use Basic authentication (legacy)
+  // Use Basic authentication with username (legacy)
   headers.Authorization = `Basic ${base64(username:password)}`;
 }
 ```
 
 ## Testing the Migration
 
-1. Set your API token: `export BITBUCKET_API_TOKEN=your-token`
+1. Set your API token and email: 
+   ```bash
+   export BITBUCKET_API_TOKEN=your-token
+   export BITBUCKET_EMAIL=your-atlassian-email
+   ```
 2. Test the server: `node build/index.js`
 3. Verify authentication in your MCP client (VS Code/Claude)
 
@@ -97,7 +104,8 @@ if (BITBUCKET_API_TOKEN) {
 **"Authentication failed" with API token:**
 - Verify the token has correct permissions
 - Check that the token hasn't expired
-- Ensure environment variable is properly set
+- Ensure both `BITBUCKET_API_TOKEN` and `BITBUCKET_EMAIL` environment variables are properly set
+- Verify you're using your Atlassian account email address (not username)
 
 **Server still using App Password:**
 - Check that `BITBUCKET_API_TOKEN` is set
