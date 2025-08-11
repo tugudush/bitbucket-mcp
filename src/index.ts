@@ -821,18 +821,36 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
       case 'bb_get_file_content': {
         const parsed = GetFileContentSchema.parse(args);
-        let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src`;
-        if (parsed.ref) {
-          url += `/${parsed.ref}`;
-        }
-        url += `/${parsed.file_path}`;
 
-        // Direct raw content fetch; no method specified so it remains a safe GET
+        // Build URL with ref in path: /repositories/{workspace}/{repo_slug}/src/{ref}/{file_path}
+        const ref = parsed.ref || 'HEAD';
+        let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${ref}/${parsed.file_path}`;
+
+        // We need to use a custom fetch with authentication since makeRequest expects JSON
+        const headers: Record<string, string> = {
+          Accept: 'text/plain',
+          'User-Agent': 'bitbucket-mcp-server/1.0.0',
+        };
+
+        // Add authentication if available (copied from makeRequest logic)
+        const apiToken = process.env.BITBUCKET_API_TOKEN;
+        const email = process.env.BITBUCKET_EMAIL;
+        const username = process.env.BITBUCKET_USERNAME;
+        const appPassword = process.env.BITBUCKET_APP_PASSWORD;
+
+        if (apiToken && email) {
+          const auth = Buffer.from(`${email}:${apiToken}`).toString('base64');
+          headers.Authorization = `Basic ${auth}`;
+        } else if (username && appPassword) {
+          const auth = Buffer.from(`${username}:${appPassword}`).toString(
+            'base64'
+          );
+          headers.Authorization = `Basic ${auth}`;
+        }
+
         const response = await fetch(url, {
-          headers: {
-            Accept: 'text/plain',
-            'User-Agent': 'bitbucket-mcp-server/1.0.0',
-          },
+          method: 'GET',
+          headers,
         });
 
         if (!response.ok) {
@@ -862,12 +880,12 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
         const buildListingUrl = (page?: number) => {
           const params = new URLSearchParams();
+          if (parsed.ref) params.append('at', parsed.ref);
           if (page) params.append('page', page.toString());
           if (parsed.pagelen)
             params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
 
           let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src`;
-          if (parsed.ref) url += `/${parsed.ref}`;
           if (parsed.path) url += `/${parsed.path.replace(/^\/+|\/+$/g, '')}`;
           if (params.toString()) url += `?${params}`;
           return url;
@@ -1041,6 +1059,24 @@ async function runServer() {
   console.error('Bitbucket MCP Server running on stdio');
   console.error(
     'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
+  );
+
+  // Debug: Log environment variables
+  console.error('Debug - Environment variables:');
+  console.error(
+    '  BITBUCKET_API_TOKEN:',
+    process.env.BITBUCKET_API_TOKEN
+      ? 'SET (length: ' + process.env.BITBUCKET_API_TOKEN.length + ')'
+      : 'NOT SET'
+  );
+  console.error('  BITBUCKET_EMAIL:', process.env.BITBUCKET_EMAIL || 'NOT SET');
+  console.error(
+    '  BITBUCKET_USERNAME:',
+    process.env.BITBUCKET_USERNAME || 'NOT SET'
+  );
+  console.error(
+    '  BITBUCKET_APP_PASSWORD:',
+    process.env.BITBUCKET_APP_PASSWORD ? 'SET' : 'NOT SET'
   );
 }
 
