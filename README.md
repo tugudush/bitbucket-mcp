@@ -24,14 +24,18 @@ npm run build
 
 ### 2. Authentication Setup
 
-**API Tokens (Recommended - App Passwords deprecated Sept 9, 2025):**
+**Choose one of these methods:**
+
+**Option A: Set in MCP Configuration (Recommended)**
+Configure directly in your MCP client config (see Integration section below).
+
+**Option B: Environment Variables (for manual testing)**
 ```bash
+# API Tokens (Recommended - App Passwords deprecated Sept 9, 2025)
 export BITBUCKET_API_TOKEN="your-api-token"
 export BITBUCKET_EMAIL="your-atlassian-email"
-```
 
-**Legacy App Passwords:**
-```bash
+# Legacy App Passwords
 export BITBUCKET_USERNAME="your-username"  
 export BITBUCKET_APP_PASSWORD="your-app-password"
 ```
@@ -96,7 +100,7 @@ node build/index.js  # Test server
 - Install GitHub Copilot extensions
 - Use provided `.vscode/` configuration
 - Open Copilot Chat with `Ctrl+Alt+I`
-- Try: `@copilot using bitbucket, list repositories in myworkspace`
+- Try: `using bitbucket, list repositories in myworkspace`
 
 ## Security & Limitations
 
