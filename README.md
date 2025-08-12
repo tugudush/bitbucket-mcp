@@ -1,5 +1,7 @@
 # Bitbucket MCP Server
 
+⚠️ **WORK IN PROGRESS** - This is an actively developed project and may have breaking changes or incomplete features.
+
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot and Claude Desktop.
 
 ## ✨ Enhanced Features
@@ -163,6 +165,16 @@ MIT License - See [LICENSE](LICENSE) for details.
 - 📋 [Create an issue](../../issues) for bugs or feature requests
 - 📖 Check existing [documentation](../../wiki) and issues
 - 🚀 [Contributing guidelines](CONTRIBUTING.md)
+
+## Development Status & Related Projects
+
+🚧 **This project is under active development** and may contain incomplete features or breaking changes. We welcome contributions and feedback!
+
+**Related MCP Servers for Reference:**
+- [bitbucket-server-mcp-server](https://github.com/garc33/bitbucket-server-mcp-server) - MCP server for Bitbucket Server (on-premises)
+- [mcp-server-atlassian-bitbucket](https://github.com/aashari/mcp-server-atlassian-bitbucket) - Alternative Atlassian Bitbucket MCP implementation
+
+These repositories provide excellent reference implementations and inspiration for Bitbucket API integration patterns.
 
 ## API Coverage
 

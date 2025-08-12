@@ -1,5 +1,7 @@
 # Bitbucket MCP Server - AI Coding Instructions
 
+⚠️ **DEVELOPMENT STATUS**: This is an actively developed project with ongoing improvements and potential breaking changes.
+
 ## Architecture Overview
 
 This is a **Model Context Protocol (MCP)** server providing read-only access to Bitbucket API v2.0. The architecture follows a single-file pattern with clear separation of concerns:
@@ -248,3 +250,22 @@ bb_get_file_content --workspace myworkspace --repo_slug myrepo --file_path READM
 # Advanced search in repository
 bb_search_code_advanced --workspace myworkspace --repo_slug myrepo --search_query "function auth" --type code
 ```
+
+## Development Status & References
+
+🚧 **Active Development**: This project is under continuous development. Features may be incomplete or subject to breaking changes.
+
+**Reference Implementations:**
+- **[bitbucket-server-mcp-server](https://github.com/garc33/bitbucket-server-mcp-server)** - MCP server for Bitbucket Server (on-premises)
+  - Useful for understanding server-side Bitbucket API patterns
+  - Reference for authentication and repository management approaches
+- **[mcp-server-atlassian-bitbucket](https://github.com/aashari/mcp-server-atlassian-bitbucket)** - Alternative Atlassian Bitbucket MCP implementation
+  - Excellent reference for Cloud API integration patterns
+  - Inspiration for tool naming conventions and response formatting
+
+**Development Guidelines:**
+1. Always check reference implementations before adding new features
+2. Maintain compatibility with existing MCP patterns from reference repos
+3. Follow read-only design principles established in this codebase
+4. Test against both public and private repositories
+5. Consider breaking changes impact on existing integrations
