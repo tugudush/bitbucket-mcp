@@ -64,13 +64,6 @@ export class RateLimitError extends BitbucketApiError {
   }
 }
 
-export class ReadOnlyModeError extends Error {
-  constructor(operation: string) {
-    super(`Operation '${operation}' is not available in read-only mode`);
-    this.name = 'ReadOnlyModeError';
-  }
-}
-
 /**
  * Creates appropriate error instance based on HTTP status code
  */

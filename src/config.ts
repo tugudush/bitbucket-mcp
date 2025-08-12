@@ -12,12 +12,6 @@ const ConfigSchema = z.object({
   BITBUCKET_USERNAME: z.string().optional(),
   BITBUCKET_APP_PASSWORD: z.string().optional(),
 
-  // Security
-  BITBUCKET_READ_ONLY: z
-    .string()
-    .transform(val => val === 'true')
-    .default('false'),
-
   // API Configuration
   BITBUCKET_API_BASE: z.string().url().default('https://api.bitbucket.org/2.0'),
   BITBUCKET_REQUEST_TIMEOUT: z.string().transform(Number).default('30000'),
@@ -89,9 +83,7 @@ export function initializeConfig(): { config: Config; auth: AuthMethod } {
   }
 
   // Log operational mode
-  console.error(
-    `🔒 Mode: ${config.BITBUCKET_READ_ONLY ? 'READ-ONLY' : 'FULL ACCESS'}`
-  );
+  console.error('🔒 Mode: READ-ONLY (by design)');
   console.error(`🔐 Auth: ${auth.method.toUpperCase()}`);
 
   if (config.BITBUCKET_DEBUG) {

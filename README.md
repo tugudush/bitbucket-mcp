@@ -33,7 +33,7 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 
 ## 🔒 Security Features
 
-**Read-Only Mode** (Optional): Set `BITBUCKET_READ_ONLY=true` to restrict to safe, non-modifying operations only. Perfect for production deployments and CI/CD integration.
+This server is **read-only by design** - all operations are safe, non-modifying queries. Perfect for production deployments and CI/CD integration without any risk of data modification.
 
 ## 📋 Code Search Requirements
 
@@ -126,17 +126,6 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 - `"Search for TypeScript interfaces in myworkspace/myrepo"`
 - `"Look for 'TODO' comments in myworkspace/myrepo"`
 
-**Enhanced Search:**
-- `"Search for 'authentication' code in myworkspace/myrepo"`
-- `"Find all TypeScript files containing 'interface' in myworkspace/myrepo"`
-
-**Read-Only Mode:**
-```bash
-# Enable read-only mode for production
-export BITBUCKET_READ_ONLY=true
-node build/index.js
-```
-
 ## Usage Examples
 
 **In VS Code Copilot Chat or Claude:**
@@ -167,7 +156,6 @@ node build/index.js  # Test server
 
 - ✅ **Read-only operations**: No write/delete/modify operations possible
 - ✅ **Safe for production**: No destructive actions supported  
-- ✅ **Read-only mode**: Optional `BITBUCKET_READ_ONLY=true` for maximum security
 - ✅ **Authenticated access**: Uses API tokens or App Passwords for private repos
 - ⚠️ **Rate limiting**: Subject to Bitbucket API limits
 - ⚠️ **File size limits**: Large files may be truncated

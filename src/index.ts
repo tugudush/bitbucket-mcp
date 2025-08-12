@@ -8,7 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { createApiError, ReadOnlyModeError } from './errors.js';
+import { createApiError } from './errors.js';
 import { initializeConfig } from './config.js';
 
 // Initialize configuration
@@ -35,29 +35,6 @@ const API_CONSTANTS = {
   REQUEST_TIMEOUT_MS: config.BITBUCKET_REQUEST_TIMEOUT,
   RETRY_ATTEMPTS: 3,
 } as const;
-
-// Read-only mode configuration
-const isReadOnlyMode = config.BITBUCKET_READ_ONLY;
-const readOnlyTools = [
-  'bb_list_workspaces',
-  'bb_get_workspace',
-  'bb_list_repositories',
-  'bb_get_repository',
-  'bb_browse_repository',
-  'bb_get_file_content',
-  'bb_get_branches',
-  'bb_get_commits',
-  'bb_get_issues',
-  'bb_get_issue',
-  'bb_get_pull_requests',
-  'bb_get_pull_request',
-  'bb_get_pull_request_activity',
-  'bb_get_pull_request_comments',
-  'bb_get_user',
-  'bb_get_current_user',
-  'bb_search_repositories',
-  'bb_search_code',
-];
 
 // TypeScript interfaces for Bitbucket API responses
 interface BitbucketUser {
@@ -471,7 +448,9 @@ async function makeRequest<T = unknown>(
   // Enforce read-only behavior: block any non-GET methods at runtime
   const requestedMethod = (options.method || 'GET').toString().toUpperCase();
   if (requestedMethod !== 'GET') {
-    throw new ReadOnlyModeError(`${requestedMethod} ${url}`);
+    throw new Error(
+      `Only GET requests are allowed. Attempted: ${requestedMethod} ${url}`
+    );
   }
 
   const headers: Record<string, string> = {
@@ -640,26 +619,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
   ];
 
-  // Filter tools based on read-only mode
-  const availableTools = isReadOnlyMode
-    ? allTools.filter(tool => readOnlyTools.includes(tool.name))
-    : allTools;
-
   return {
-    tools: availableTools,
+    tools: allTools,
   };
 });
 
 // Tool implementations
 server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params;
-
-  // Check if tool is allowed in read-only mode
-  if (isReadOnlyMode && !readOnlyTools.includes(name)) {
-    throw new ReadOnlyModeError(
-      `Tool ${name}. Set BITBUCKET_READ_ONLY=false to enable all tools.`
-    );
-  }
 
   try {
     switch (name) {
