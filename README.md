@@ -39,7 +39,7 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 
 **Code Search Setup**: The `bb_search_code` feature requires code search to be enabled in your Bitbucket account settings:
 1. Go to your Bitbucket account settings
-2. Navigate to "Code search" section  
+2. Navigate to "Code search" section https://bitbucket.org/search
 3. Enable code search for your repositories
 4. Note: Search may take time to index existing repositories
 
