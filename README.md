@@ -37,7 +37,7 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
     "bitbucket-mcp": {
       "type": "stdio",
       "command": "node",
-      "args": ["./build/index.js"],
+      "args": ["/path/to/build/index.js"],
       "env": {
         "BITBUCKET_API_TOKEN": "your-token",
         "BITBUCKET_EMAIL": "your@email.com"
