@@ -15,24 +15,22 @@ const BITBUCKET_API_BASE = 'https://api.bitbucket.org/2.0';
 // Read-only mode configuration
 const isReadOnlyMode = process.env.BITBUCKET_READ_ONLY === 'true';
 const readOnlyTools = [
-  'bb_get_repository',
-  'bb_list_repositories',
   'bb_list_workspaces',
-  'bb_get_pull_requests',
-  'bb_get_pull_request',
-  'bb_get_pull_request_comments',
-  'bb_get_pull_request_activity',
+  'bb_get_workspace',
+  'bb_list_repositories',
+  'bb_get_repository',
+  'bb_browse_repository',
+  'bb_get_file_content',
+  'bb_get_branches',
+  'bb_get_commits',
   'bb_get_issues',
   'bb_get_issue',
-  'bb_get_commits',
-  'bb_get_branches',
-  'bb_get_file_content',
-  'bb_browse_repository',
-  'bb_search_code',
-  'bb_search_code_advanced',
-  'bb_list_directory',
+  'bb_get_pull_requests',
+  'bb_get_pull_request',
+  'bb_get_pull_request_activity',
+  'bb_get_pull_request_comments',
   'bb_get_user',
-  'bb_get_workspace',
+  // Note: Search functionality removed - Bitbucket Cloud API doesn't provide code search endpoints
 ];
 
 // TypeScript interfaces for Bitbucket API responses
@@ -145,13 +143,7 @@ interface BitbucketBranchWithTarget {
   };
 }
 
-interface BitbucketSearchResult {
-  file: {
-    path: string;
-  };
-  line_number: number;
-  content_match_text: string;
-}
+// Note: BitbucketSearchResult interface removed - search functionality not available
 
 interface BitbucketWorkspace {
   name: string;
@@ -321,54 +313,10 @@ const BrowseRepositorySchema = z.object({
     .describe('Maximum number of items to return (default: 50, max: 100)'),
 });
 
-const SearchCodeAdvancedSchema = z.object({
-  search_query: z.string().describe('The search query'),
-  workspace: z
-    .string()
-    .optional()
-    .describe('Limit search to specific workspace'),
-  repo_slug: z
-    .string()
-    .optional()
-    .describe('Limit search to specific repository (requires workspace)'),
-  type: z
-    .enum(['code', 'file'])
-    .optional()
-    .describe(
-      'Search type: "code" for content search, "file" for filename search'
-    ),
-  page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
-});
+// Note: Bitbucket Cloud API does not provide code search endpoints
+// Search functionality has been removed due to API limitations
 
 const ListWorkspacesSchema = z.object({
-  page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
-});
-
-const ListDirectorySchema = z.object({
-  workspace: z.string().describe('The workspace or username'),
-  repo_slug: z.string().describe('The repository name'),
-  path: z
-    .string()
-    .optional()
-    .describe('Directory path within the repository (default: repo root)'),
-  ref: z
-    .string()
-    .optional()
-    .describe('Branch, tag, or commit hash (defaults to main branch)'),
-  page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
-  recursive: z
-    .boolean()
-    .optional()
-    .describe('When true, recursively lists all files under the path'),
-});
-
-const SearchCodeSchema = z.object({
-  workspace: z.string().describe('The workspace or username'),
-  repo_slug: z.string().describe('The repository name'),
-  search_query: z.string().describe('The search query'),
   page: z.number().optional().describe('Page number for pagination'),
   pagelen: z.number().optional().describe('Number of items per page (max 100)'),
 });
@@ -520,23 +468,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         'Browse files and directories in a repository to explore structure',
       inputSchema: zodToJsonSchema(BrowseRepositorySchema),
     },
-    {
-      name: 'bb_search_code',
-      description: 'Search for code in a repository',
-      inputSchema: zodToJsonSchema(SearchCodeSchema),
-    },
-    {
-      name: 'bb_search_code_advanced',
-      description:
-        'Advanced search across workspaces and repositories with filtering',
-      inputSchema: zodToJsonSchema(SearchCodeAdvancedSchema),
-    },
-    {
-      name: 'bb_list_directory',
-      description:
-        'List files and folders in a repository path (optionally recursive)',
-      inputSchema: zodToJsonSchema(ListDirectorySchema),
-    },
+    // Note: Search tools removed - Bitbucket Cloud API doesn't provide search endpoints
     {
       name: 'bb_get_user',
       description: 'Get information about a Bitbucket user',
@@ -996,125 +928,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         };
       }
 
-      case 'bb_list_directory': {
-        const parsed = ListDirectorySchema.parse(args);
-
-        const buildListingUrl = (page?: number) => {
-          const params = new URLSearchParams();
-          if (parsed.ref) params.append('at', parsed.ref);
-          if (page) params.append('page', page.toString());
-          if (parsed.pagelen)
-            params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
-
-          let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/src`;
-          if (parsed.path) url += `/${parsed.path.replace(/^\/+|\/+$/g, '')}`;
-          if (params.toString()) url += `?${params}`;
-          return url;
-        };
-
-        async function listOneLevel() {
-          const items: BitbucketSrcItem[] = [];
-          let page = parsed.page;
-          while (true) {
-            const url = buildListingUrl(page);
-            // The Bitbucket "src" endpoint returns a listing object with { values: BitbucketSrcItem[], ... }
-            const data = await makeRequest<BitbucketSrcListingResponse>(url);
-
-            if (data && data.values && Array.isArray(data.values)) {
-              items.push(...data.values);
-              if (!data.next) break;
-              // Advance to next page if server provided a next link
-              page = (page || 1) + 1;
-              continue;
-            }
-
-            // No more data or unexpected response format
-            break;
-          }
-          return items;
-        }
-
-        let results: BitbucketSrcItem[] = [];
-        if (parsed.recursive) {
-          // BFS traversal starting at the provided path
-          const queue: string[] = [parsed.path || ''];
-          while (queue.length) {
-            const current = queue.shift()!;
-            const originalPath = parsed.path;
-            // Temporarily set path for this iteration
-            (parsed.path as string | undefined) = current;
-            const items = await listOneLevel();
-            results.push(...items.filter(i => i.type !== 'commit_directory'));
-            const dirs = items.filter(i => i.type === 'commit_directory');
-            for (const d of dirs) {
-              queue.push(d.path);
-            }
-            parsed.path = originalPath;
-          }
-        } else {
-          results = await listOneLevel();
-        }
-
-        // Render a friendly text output
-        const headerPath = parsed.path ? parsed.path.replace(/^\/+/, '') : '/';
-        const lines = results
-          .sort((a, b) => a.path.localeCompare(b.path))
-          .map(item => {
-            const name = item.path.split('/').pop() || item.path;
-            if (item.type === 'commit_directory') {
-              return `📁 ${name}/  - ${item.path}`;
-            }
-            const size = item.size != null ? ` (${item.size} bytes)` : '';
-            return `📄 ${name}${size}  - ${item.path}`;
-          })
-          .join('\n');
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text:
-                `Directory listing for ${parsed.workspace}/${parsed.repo_slug} at ${parsed.ref || 'default branch'}:\n` +
-                `Path: ${headerPath}  •  Items: ${results.length}\n` +
-                `${lines || '(empty)'}`,
-            },
-          ],
-        };
-      }
-
-      case 'bb_search_code': {
-        const parsed = SearchCodeSchema.parse(args);
-        const params = new URLSearchParams();
-        params.append('search_query', parsed.search_query);
-        if (parsed.page) params.append('page', parsed.page.toString());
-        if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
-
-        const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/search/code?${params}`;
-        const data =
-          await makeRequest<BitbucketApiResponse<BitbucketSearchResult>>(url);
-
-        const resultList = data.values
-          .map(
-            (result: BitbucketSearchResult) =>
-              `- File: ${result.file.path}\n` +
-              `  Line: ${result.line_number}\n` +
-              `  Content: ${result.content_match_text}`
-          )
-          .join('\n\n');
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text:
-                `Code search results for "${parsed.search_query}" in ${parsed.workspace}/${parsed.repo_slug}:\n\n${resultList}\n\n` +
-                `Page: ${data.page}\n` +
-                `Total: ${data.size} results`,
-            },
-          ],
-        };
-      }
+      // Note: Search cases removed - Bitbucket Cloud API doesn't provide search endpoints
 
       case 'bb_get_user': {
         const parsed = GetUserSchema.parse(args);
@@ -1228,59 +1042,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         };
       }
 
-      case 'bb_search_code_advanced': {
-        const parsed = SearchCodeAdvancedSchema.parse(args);
-        const params = new URLSearchParams();
-        params.append('search_query', parsed.search_query);
-        if (parsed.page) params.append('page', parsed.page.toString());
-        if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
-
-        let url: string;
-        if (parsed.workspace && parsed.repo_slug) {
-          // Search within specific repository
-          url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/search/code?${params}`;
-        } else if (parsed.workspace) {
-          // Search across all repositories in workspace
-          // Note: Bitbucket Cloud doesn't have a direct workspace-wide search API
-          // We'll use the repository search as a fallback and note the limitation
-          throw new Error(
-            'Workspace-wide search is not supported by Bitbucket Cloud API. ' +
-              'Please specify both workspace and repo_slug for repository-specific search.'
-          );
-        } else {
-          throw new Error(
-            'Advanced search requires at least a workspace parameter. ' +
-              'Global search across all accessible repositories is not supported by Bitbucket Cloud API.'
-          );
-        }
-
-        const data =
-          await makeRequest<BitbucketApiResponse<BitbucketSearchResult>>(url);
-
-        const resultList = data.values
-          .map(
-            (result: BitbucketSearchResult) =>
-              `- File: ${result.file.path}\n` +
-              `  Line ${result.line_number}: ${result.content_match_text.trim()}`
-          )
-          .join('\n\n');
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text:
-                `Advanced Search Results for "${parsed.search_query}"\n` +
-                `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
-                `Type: ${parsed.type || 'code'}\n\n` +
-                `${resultList}\n\n` +
-                `Page: ${data.page || 1}\n` +
-                `Total: ${data.size} results`,
-            },
-          ],
-        };
-      }
+      // Note: Advanced search case removed - Bitbucket Cloud API doesn't provide search endpoints
 
       default:
         throw new Error(`Unknown tool: ${name}`);

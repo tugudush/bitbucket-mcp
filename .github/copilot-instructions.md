@@ -19,8 +19,10 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 ### New Tools Added
 - **`bb_list_workspaces`** - Workspace discovery and exploration
 - **`bb_browse_repository`** - Repository structure navigation
-- **`bb_search_code_advanced`** - Cross-repository search with filtering  
 - **Enhanced `bb_get_file_content`** - Line-based pagination (1-10,000 lines)
+
+### Removed Features
+- **Search functionality removed** - Bitbucket Cloud API does not provide code search endpoints
 
 ### Security Enhancement: Read-Only Mode
 ```bash
@@ -167,14 +169,15 @@ if (parsed.pagelen) params.append('pagelen', Math.min(parsed.pagelen, 100).toStr
 ```
 
 ### Enhanced Search Pattern
-Advanced search with workspace/repository filtering:
+**⚠️ REMOVED**: Search functionality not available in Bitbucket Cloud API:
 ```typescript
-// Repository-specific search
-if (parsed.workspace && parsed.repo_slug) {
-  url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/search/code?${params}`;
-} else {
-  throw new Error('Advanced search requires workspace and repo_slug parameters');
-}
+// ❌ These endpoints do not exist in Bitbucket Cloud API:
+// /2.0/workspaces/{workspace}/search/code
+// /2.0/repositories/{workspace}/{repo}/search/code
+
+// ✅ Use alternatives for code discovery:
+// bb_browse_repository - explore directory structure
+// bb_get_file_content - read and search within specific files
 ```
 
 ### Response Transformation
@@ -195,7 +198,7 @@ const prList = data.values
 - **Rate limiting** - Respects Bitbucket API limits (no custom throttling)
 - **Private repos** - Require authentication; public repos work without credentials
 - **File size limits** - Large files handled with pagination (up to 10,000 lines per request)
-- **Search limitations** - Cross-workspace search not supported by Bitbucket Cloud API
+- **⚠️ No code search** - Bitbucket Cloud API does not provide search endpoints (unlike GitHub API)
 
 ## Tool Development Guidelines
 
@@ -216,9 +219,11 @@ See existing tools like `bb_browse_repository` as reference pattern for enhanced
 ### Enhanced Features (2025-08)
 - **Workspace discovery**: `bb_list_workspaces` for workspace exploration
 - **Repository browsing**: `bb_browse_repository` for directory navigation
-- **Advanced search**: `bb_search_code_advanced` with filtering capabilities
 - **File pagination**: Enhanced `bb_get_file_content` with line-based pagination
 - **Read-only mode**: Security enhancement with tool filtering and runtime protection
+
+### Removed Features (2025-08)
+- **Search functionality removed** - Bitbucket Cloud API does not provide code search endpoints
 
 ### Branch Handling (Fixed 2025-08)
 - **Directory listings**: Use `?at=branch` query parameter
@@ -247,8 +252,8 @@ bb_browse_repository --workspace myworkspace --repo_slug myrepo --limit 20
 # Read file with pagination
 bb_get_file_content --workspace myworkspace --repo_slug myrepo --file_path README.md --start 1 --limit 50
 
-# Advanced search in repository
-bb_search_code_advanced --workspace myworkspace --repo_slug myrepo --search_query "function auth" --type code
+# Note: Search functionality not available in Bitbucket Cloud API
+# Use bb_browse_repository + bb_get_file_content for code discovery
 ```
 
 ## Development Status & References

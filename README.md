@@ -13,8 +13,7 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 
 **Advanced File Operations:**
 - **Paginated File Content**: `bb_get_file_content` - Read files with line-based pagination (1-10,000 lines)
-- **Directory Listing**: `bb_list_directory` - List files and folders with optional recursion
-- **Enhanced Search**: `bb_search_code_advanced` - Cross-repository search with filtering
+- **Directory Navigation**: `bb_browse_repository` - Explore repository structure and file organization
 
 **Pull Request Management:**
 - **PR Overview**: `bb_get_pull_requests`, `bb_get_pull_request` - Browse and analyze pull requests
@@ -25,7 +24,6 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 
 **Version Control:**
 - **Branch Operations**: `bb_get_branches`, `bb_get_commits` - Explore repository history
-- **Code Search**: `bb_search_code` - Find specific code patterns
 
 **User & Workspace Info:**
 - **Identity**: `bb_get_user`, `bb_get_workspace` - Access user and workspace details
@@ -33,6 +31,13 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 ## 🔒 Security Features
 
 **Read-Only Mode** (Optional): Set `BITBUCKET_READ_ONLY=true` to restrict to safe, non-modifying operations only. Perfect for production deployments and CI/CD integration.
+
+## ⚠️ API Limitations
+
+**Code Search Not Available**: Bitbucket Cloud's public API does not provide code search endpoints, unlike GitHub's API. This is a known limitation of the Bitbucket Cloud platform. For code discovery, use:
+- `bb_browse_repository` to explore directory structures
+- `bb_get_file_content` to read specific files
+- Manual pattern searching within file contents
 
 ## Quick Start
 
