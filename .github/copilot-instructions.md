@@ -20,9 +20,15 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 - **`bb_list_workspaces`** - Workspace discovery and exploration
 - **`bb_browse_repository`** - Repository structure navigation
 - **Enhanced `bb_get_file_content`** - Line-based pagination (1-10,000 lines)
+- **`bb_search_code`** - Code search with language filtering and match highlighting
 
 ### Removed Features
-- **Search functionality removed** - Bitbucket Cloud API does not provide code search endpoints
+- **None** - All features are now operational
+
+### Code Search Implementation
+- **Working endpoint**: `/2.0/workspaces/{workspace}/search/code` 
+- **Requirement**: Code search must be enabled in Bitbucket account settings
+- **Features**: Language filtering, repository scoping, rich match highlighting with line numbers
 
 ### Security Enhancement: Read-Only Mode
 ```bash
@@ -169,16 +175,22 @@ if (parsed.pagelen) params.append('pagelen', Math.min(parsed.pagelen, 100).toStr
 ```
 
 ### Enhanced Search Pattern
-**⚠️ REMOVED**: Search functionality not available in Bitbucket Cloud API:
+**✅ WORKING**: Code search functionality available with account enablement:
 ```typescript
-// ❌ These endpoints do not exist in Bitbucket Cloud API:
+// ✅ Working endpoint in Bitbucket Cloud API:
 // /2.0/workspaces/{workspace}/search/code
-// /2.0/repositories/{workspace}/{repo}/search/code
 
-// ✅ Use alternatives for code discovery:
-// bb_browse_repository - explore directory structure
-// bb_get_file_content - read and search within specific files
+// Features available:
+// - Repository scoping with repo_slug parameter
+// - Language filtering with automatic mapping
+// - Rich match highlighting with line numbers
+// - Query enhancement with repo:, lang:, ext: filters
 ```
+
+Requirements for code search:
+- Code search must be enabled in Bitbucket account settings
+- Repository-scoped searches require repo_slug parameter
+- Search indexing may take time for existing repositories
 
 ### Response Transformation
 Convert API responses to readable text format for AI consumption:
@@ -198,7 +210,7 @@ const prList = data.values
 - **Rate limiting** - Respects Bitbucket API limits (no custom throttling)
 - **Private repos** - Require authentication; public repos work without credentials
 - **File size limits** - Large files handled with pagination (up to 10,000 lines per request)
-- **⚠️ No code search** - Bitbucket Cloud API does not provide search endpoints (unlike GitHub API)
+- **Code search** - Requires account-level enablement in Bitbucket settings, provides rich search results with match highlighting
 
 ## Tool Development Guidelines
 
@@ -220,10 +232,11 @@ See existing tools like `bb_browse_repository` as reference pattern for enhanced
 - **Workspace discovery**: `bb_list_workspaces` for workspace exploration
 - **Repository browsing**: `bb_browse_repository` for directory navigation
 - **File pagination**: Enhanced `bb_get_file_content` with line-based pagination
+- **Code search**: `bb_search_code` with language filtering and rich match highlighting
 - **Read-only mode**: Security enhancement with tool filtering and runtime protection
 
 ### Removed Features (2025-08)
-- **Search functionality removed** - Bitbucket Cloud API does not provide code search endpoints
+- **None** - All planned features implemented and operational
 
 ### Branch Handling (Fixed 2025-08)
 - **Directory listings**: Use `?at=branch` query parameter
@@ -252,8 +265,9 @@ bb_browse_repository --workspace myworkspace --repo_slug myrepo --limit 20
 # Read file with pagination
 bb_get_file_content --workspace myworkspace --repo_slug myrepo --file_path README.md --start 1 --limit 50
 
-# Note: Search functionality not available in Bitbucket Cloud API
-# Use bb_browse_repository + bb_get_file_content for code discovery
+# Search for code (requires account-level enablement)
+bb_search_code --workspace myworkspace --repo_slug myrepo --search_query "function authentication"
+bb_search_code --workspace myworkspace --search_query "class extends"
 ```
 
 ## Development Status & References

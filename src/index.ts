@@ -32,7 +32,7 @@ const readOnlyTools = [
   'bb_get_user',
   'bb_get_current_user',
   'bb_search_repositories',
-  // Note: Search functionality removed - Bitbucket Cloud API doesn't provide code search endpoints
+  'bb_search_code',
 ];
 
 // TypeScript interfaces for Bitbucket API responses
@@ -99,6 +99,9 @@ interface BitbucketComment {
 }
 
 interface BitbucketActivity {
+  action?: string;
+  user: BitbucketUser;
+  created_on: string;
   update?: {
     date: string;
     author: BitbucketUser;
@@ -110,6 +113,60 @@ interface BitbucketActivity {
   approval?: {
     state: string;
   };
+}
+
+interface BitbucketSrcItem {
+  type: string;
+  path: string;
+  size?: number;
+}
+
+interface BitbucketWorkspace {
+  slug: string;
+  name: string;
+  type: string;
+  uuid?: string;
+  created_on?: string;
+}
+
+// Code search interfaces
+interface CodeSearchResult {
+  type: string;
+  content_match_count: number;
+  content_matches: ContentMatch[];
+  path_matches: PathMatch[];
+  file: {
+    path: string;
+    type: string;
+    links: {
+      self: {
+        href: string;
+      };
+    };
+  };
+}
+
+interface ContentMatch {
+  lines: Array<{
+    line: number;
+    segments: Array<{
+      text: string;
+      match: boolean;
+    }>;
+  }>;
+}
+
+interface PathMatch {
+  text: string;
+  match: boolean;
+}
+
+interface CodeSearchResponse {
+  size: number;
+  page: number;
+  pagelen: number;
+  query_substituted: boolean;
+  values: CodeSearchResult[];
 }
 
 interface BitbucketIssue {
@@ -147,14 +204,6 @@ interface BitbucketBranchWithTarget {
 
 // Note: BitbucketSearchResult interface removed - search functionality not available
 
-interface BitbucketWorkspace {
-  name: string;
-  slug: string;
-  uuid: string;
-  type: string;
-  created_on: string;
-}
-
 interface BitbucketApiResponse<T> {
   values: T[];
   page?: number;
@@ -166,18 +215,6 @@ interface BitbucketApiResponse<T> {
 
 // Items returned by the Bitbucket
 // /repositories/{workspace}/{repo_slug}/src/{ref}/{path} endpoint
-type BitbucketSrcItemType =
-  | 'commit_file'
-  | 'commit_directory'
-  | 'commit_submodule'
-  | 'commit_link';
-
-interface BitbucketSrcItem {
-  type: BitbucketSrcItemType;
-  path: string;
-  size?: number; // only for files
-}
-
 interface BitbucketSrcListingResponse {
   values: BitbucketSrcItem[];
   page?: number;
@@ -345,6 +382,25 @@ const SearchRepositoriesSchema = z.object({
   query: z
     .string()
     .describe('Search query to filter repositories by name or description'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+});
+
+const SearchCodeSchema = z.object({
+  workspace: z.string().describe('The workspace to search in'),
+  search_query: z.string().describe('Search query for code content'),
+  repo_slug: z
+    .string()
+    .optional()
+    .describe('Repository slug to limit search to specific repository'),
+  language: z
+    .string()
+    .optional()
+    .describe('Filter code search by programming language'),
+  extension: z
+    .string()
+    .optional()
+    .describe('Filter code search by file extension'),
   page: z.number().optional().describe('Page number for pagination'),
   pagelen: z.number().optional().describe('Number of items per page (max 100)'),
 });
@@ -540,6 +596,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       description:
         'Search for repositories within a workspace by name or description.',
       inputSchema: zodToJsonSchema(SearchRepositoriesSchema),
+    },
+    {
+      name: 'bb_search_code',
+      description:
+        'Search for code content within a workspace. Supports filtering by repository, language, and file extension.',
+      inputSchema: zodToJsonSchema(SearchCodeSchema),
     },
     {
       name: 'bb_get_workspace',
@@ -1134,6 +1196,92 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
                 `Repository Search Results in ${parsed.workspace} for "${parsed.query}":\n\n${repoList}\n\n` +
                 `Page: ${data.page || 1}\n` +
                 `Total: ${data.size || data.values.length} repositories`,
+            },
+          ],
+        };
+      }
+
+      case 'bb_search_code': {
+        const parsed = SearchCodeSchema.parse(args);
+        const params = new URLSearchParams();
+
+        // Build enhanced search query based on aashari implementation
+        let searchQuery = parsed.search_query;
+
+        // Add repository filter if specified
+        if (parsed.repo_slug) {
+          searchQuery = `${searchQuery} repo:${parsed.repo_slug}`;
+        }
+
+        // Add language filter if specified
+        if (parsed.language) {
+          const languageMapping: Record<string, string> = {
+            hcl: 'terraform',
+            tf: 'terraform',
+            typescript: 'ts',
+            javascript: 'js',
+            python: 'py',
+          };
+          const mappedLanguage =
+            languageMapping[parsed.language.toLowerCase()] ||
+            parsed.language.toLowerCase();
+          searchQuery = `${searchQuery} lang:${mappedLanguage}`;
+        }
+
+        // Add extension filter if specified
+        if (parsed.extension) {
+          searchQuery = `${searchQuery} ext:${parsed.extension}`;
+        }
+
+        params.append('search_query', searchQuery);
+        if (parsed.page) params.append('page', parsed.page.toString());
+        if (parsed.pagelen)
+          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+
+        const url = `${BITBUCKET_API_BASE}/workspaces/${parsed.workspace}/search/code?${params}`;
+        const data = await makeRequest<CodeSearchResponse>(url);
+
+        // Format the code search results
+        let resultText = `Code Search Results in ${parsed.workspace} for "${parsed.search_query}":\n\n`;
+
+        if (data.values && data.values.length > 0) {
+          data.values.forEach((result, index) => {
+            resultText += `### ${index + 1}. ${result.file.path}\n`;
+            resultText += `Match count: ${result.content_match_count}\n\n`;
+
+            // Show content matches with context
+            if (result.content_matches && result.content_matches.length > 0) {
+              result.content_matches.forEach(match => {
+                if (match.lines && match.lines.length > 0) {
+                  resultText += '```\n';
+                  match.lines.forEach(line => {
+                    resultText += `${line.line}: `;
+                    if (line.segments && line.segments.length > 0) {
+                      line.segments.forEach(segment => {
+                        resultText += segment.match
+                          ? `**${segment.text}**`
+                          : segment.text;
+                      });
+                    }
+                    resultText += '\n';
+                  });
+                  resultText += '```\n\n';
+                }
+              });
+            }
+          });
+        } else {
+          resultText += 'No code matches found.\n\n';
+        }
+
+        resultText += `Page: ${data.page || 1}\n`;
+        resultText += `Total matches: ${data.size || 0}`;
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: resultText,
             },
           ],
         };
