@@ -364,20 +364,38 @@ export async function handleToolCall(request: CallToolRequest): Promise<{
           await makeRequest<BitbucketApiResponse<BitbucketActivity>>(url);
 
         const activityList = data.values
-          .map(
-            (activity: BitbucketActivity) =>
-              `- ${activity.user.display_name} (${activity.created_on}):\n` +
-              `  Action: ${activity.action || 'Unknown'}\n` +
-              (activity.comment
-                ? `  Comment: ${activity.comment.content?.raw || 'No content'}`
-                : '') +
-              (activity.approval
-                ? `  Approval: ${activity.approval.state}`
-                : '') +
-              (activity.update
-                ? `  Update: ${activity.update.state || 'Updated'}`
-                : '')
-          )
+          .map((activity: BitbucketActivity) => {
+            // Handle cases where user might be undefined/null (system activities)
+            const userName = activity.user?.display_name || 'System';
+            const actionDate =
+              activity.created_on || activity.update?.date || 'Unknown date';
+            const action = activity.action || 'Activity';
+
+            let activityText =
+              `- ${userName} (${actionDate}):\n` + `  Action: ${action}`;
+
+            // Add comment if present
+            if (activity.comment) {
+              activityText += `\n  Comment: ${activity.comment.content?.raw || 'No content'}`;
+            }
+
+            // Add approval if present
+            if (activity.approval) {
+              activityText += `\n  Approval: ${activity.approval.state || 'Unknown state'}`;
+            }
+
+            // Add update if present
+            if (activity.update) {
+              const updateAuthor =
+                activity.update.author?.display_name || 'Unknown';
+              activityText += `\n  Update: ${activity.update.state || 'Updated'} by ${updateAuthor}`;
+              if (activity.update.title) {
+                activityText += `\n  Title changed to: ${activity.update.title}`;
+              }
+            }
+
+            return activityText;
+          })
           .join('\n\n');
 
         return {

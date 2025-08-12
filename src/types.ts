@@ -66,8 +66,8 @@ export interface BitbucketComment {
 
 export interface BitbucketActivity {
   action?: string;
-  user: BitbucketUser;
-  created_on: string;
+  user?: BitbucketUser; // Can be undefined for system activities
+  created_on?: string;
   update?: {
     date: string;
     author: BitbucketUser;
