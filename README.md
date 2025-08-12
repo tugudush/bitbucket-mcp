@@ -28,16 +28,20 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 **User & Workspace Info:**
 - **Identity**: `bb_get_user`, `bb_get_workspace` - Access user and workspace details
 
+**Code Search:**
+- **Advanced Code Search**: `bb_search_code` - Search for code across repositories with language filtering and rich match highlighting
+
 ## 🔒 Security Features
 
 **Read-Only Mode** (Optional): Set `BITBUCKET_READ_ONLY=true` to restrict to safe, non-modifying operations only. Perfect for production deployments and CI/CD integration.
 
-## ⚠️ API Limitations
+## 📋 Code Search Requirements
 
-**Code Search Not Available**: Bitbucket Cloud's public API does not provide code search endpoints, unlike GitHub's API. This is a known limitation of the Bitbucket Cloud platform. For code discovery, use:
-- `bb_browse_repository` to explore directory structures
-- `bb_get_file_content` to read specific files
-- Manual pattern searching within file contents
+**Code Search Setup**: The `bb_search_code` feature requires code search to be enabled in your Bitbucket account settings:
+1. Go to your Bitbucket account settings
+2. Navigate to "Code search" section  
+3. Enable code search for your repositories
+4. Note: Search may take time to index existing repositories
 
 ## Quick Start
 
@@ -80,7 +84,7 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
       "args": ["./build/index.js"],
       "env": {
         "BITBUCKET_API_TOKEN": "your-token",
-        "BITBUCKET_EMAIL": "jerome2kph@gmail.com"
+        "BITBUCKET_EMAIL": "your@email.com"
       }
     }
   }
@@ -97,7 +101,7 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
       "args": ["/path/to/build/index.js"],
       "env": {
         "BITBUCKET_API_TOKEN": "your-token",
-        "BITBUCKET_EMAIL": "your-email"
+        "BITBUCKET_EMAIL": "your@email.com"
       }
     }
   }
@@ -115,6 +119,12 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 - `"Read lines 100-200 of src/app.py from myworkspace/myrepo"`
 - `"Get the first 50 lines of README.md"`
 - `"Show me the package.json file with pagination"`
+
+**Code Search:**
+- `"Search for 'authentication' code in myworkspace/myrepo"`
+- `"Find all functions containing 'validate' in myworkspace/myrepo"`
+- `"Search for TypeScript interfaces in myworkspace/myrepo"`
+- `"Look for 'TODO' comments in myworkspace/myrepo"`
 
 **Enhanced Search:**
 - `"Search for 'authentication' code in myworkspace/myrepo"`
@@ -134,6 +144,7 @@ node build/index.js
 - `"Show open pull requests for myworkspace/myrepo"`
 - `"Get README.md from myworkspace/myrepo"`
 - `"Search for 'TODO' comments in myworkspace/myrepo"`
+- `"Find TypeScript files with 'interface' definitions in myworkspace/myrepo"`
 - `"Show recent commits on main branch of myworkspace/myrepo"`
 
 ## Development
@@ -185,23 +196,26 @@ These repositories provide excellent reference implementations and inspiration f
 
 The server implements tools for the most commonly used Bitbucket API endpoints:
 
-- Repositories API (read-only operations)
-- Pull Requests API (read-only operations)
+- **Repositories API** (read-only operations)
+- **Pull Requests API** (read-only operations)
   - Pull request details and listing
   - Pull request comments (inline and general)
   - Pull request activity (reviews, approvals, state changes)
-- Issues API (read-only operations)
-- Source API (file content access)
-- Search API (code search)
-- Users API (user information)
-- Workspaces API (workspace information)
+- **Issues API** (read-only operations)
+- **Source API** (file content access)
+- **Search API** (code search with language filtering and match highlighting)
+- **Users API** (user information)
+- **Workspaces API** (workspace information)
+- **Branches API** (branch listing and information)
+- **Commits API** (commit history and details)
 
 ## Limitations
 
 - **Read-only**: This server intentionally does not support write operations
 - **Rate limiting**: Subject to Bitbucket API rate limits
 - **Large files**: File content retrieval may be limited by API response sizes
-- **Authentication**: Requires App Password for private repositories
+- **Authentication**: Requires API token or App Password for private repositories
+- **Code search**: Requires code search to be enabled in Bitbucket account settings
 
 ## Contributing
 
@@ -228,8 +242,9 @@ For issues and questions:
 Future enhancements (all read-only):
 
 - Repository statistics and analytics
-- Advanced search capabilities
+- Enhanced search capabilities with more filter options
 - Webhook information retrieval
 - Pipeline status (read-only)
 - More detailed branch and commit information
 - Repository comparison tools
+- Advanced code search filters and sorting
