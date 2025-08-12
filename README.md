@@ -1,16 +1,43 @@
 # Bitbucket MCP Server
 
+⚠️ **WORK IN PROGRESS** - This is an actively developed project and may have breaking changes or incomplete features.
+
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot and Claude Desktop.
 
-## Features
+## ✨ Enhanced Features
 
-**Read-only tools for secure repository access:**
+**Repository Discovery & Exploration:**
+- **Workspace Discovery**: `bb_list_workspaces` - Discover accessible workspaces
+- **Enhanced Repository Browsing**: `bb_list_repositories` - List repositories across workspaces
+- **Directory Navigation**: `bb_browse_repository` - Explore repository structure and file organization
 
-- **Repositories**: `bb_get_repository`, `bb_list_repositories`, `bb_get_file_content`, `bb_search_code`, `bb_list_directory`
-- **Pull Requests**: `bb_get_pull_requests`, `bb_get_pull_request`, `bb_get_pull_request_comments`, `bb_get_pull_request_activity`
-- **Issues**: `bb_get_issues`, `bb_get_issue`
-- **Version Control**: `bb_get_commits`, `bb_get_branches`
-- **Users & Workspaces**: `bb_get_user`, `bb_get_workspace`
+**Advanced File Operations:**
+- **Paginated File Content**: `bb_get_file_content` - Read files with line-based pagination (1-10,000 lines)
+- **Directory Navigation**: `bb_browse_repository` - Explore repository structure and file organization
+
+**Pull Request Management:**
+- **PR Overview**: `bb_get_pull_requests`, `bb_get_pull_request` - Browse and analyze pull requests
+- **Review System**: `bb_get_pull_request_comments`, `bb_get_pull_request_activity` - Track discussions and approvals
+
+**Issue Tracking:**
+- **Issue Management**: `bb_get_issues`, `bb_get_issue` - Monitor bugs and feature requests
+
+**Version Control:**
+- **Branch Operations**: `bb_get_branches`, `bb_get_commits` - Explore repository history
+
+**User & Workspace Info:**
+- **Identity**: `bb_get_user`, `bb_get_workspace` - Access user and workspace details
+
+## 🔒 Security Features
+
+**Read-Only Mode** (Optional): Set `BITBUCKET_READ_ONLY=true` to restrict to safe, non-modifying operations only. Perfect for production deployments and CI/CD integration.
+
+## ⚠️ API Limitations
+
+**Code Search Not Available**: Bitbucket Cloud's public API does not provide code search endpoints, unlike GitHub's API. This is a known limitation of the Bitbucket Cloud platform. For code discovery, use:
+- `bb_browse_repository` to explore directory structures
+- `bb_get_file_content` to read specific files
+- Manual pattern searching within file contents
 
 ## Quick Start
 
@@ -77,6 +104,29 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 }
 ```
 
+## Enhanced Usage Examples
+
+**Repository Discovery:**
+- `"List all my accessible workspaces"`
+- `"Browse the root directory of myworkspace/myrepo"`
+- `"Show the structure of src/components in myworkspace/myrepo"`
+
+**Advanced File Operations:**
+- `"Read lines 100-200 of src/app.py from myworkspace/myrepo"`
+- `"Get the first 50 lines of README.md"`
+- `"Show me the package.json file with pagination"`
+
+**Enhanced Search:**
+- `"Search for 'authentication' code in myworkspace/myrepo"`
+- `"Find all TypeScript files containing 'interface' in myworkspace/myrepo"`
+
+**Read-Only Mode:**
+```bash
+# Enable read-only mode for production
+export BITBUCKET_READ_ONLY=true
+node build/index.js
+```
+
 ## Usage Examples
 
 **In VS Code Copilot Chat or Claude:**
@@ -106,6 +156,7 @@ node build/index.js  # Test server
 
 - ✅ **Read-only operations**: No write/delete/modify operations possible
 - ✅ **Safe for production**: No destructive actions supported  
+- ✅ **Read-only mode**: Optional `BITBUCKET_READ_ONLY=true` for maximum security
 - ✅ **Authenticated access**: Uses API tokens or App Passwords for private repos
 - ⚠️ **Rate limiting**: Subject to Bitbucket API limits
 - ⚠️ **File size limits**: Large files may be truncated
@@ -119,6 +170,16 @@ MIT License - See [LICENSE](LICENSE) for details.
 - 📋 [Create an issue](../../issues) for bugs or feature requests
 - 📖 Check existing [documentation](../../wiki) and issues
 - 🚀 [Contributing guidelines](CONTRIBUTING.md)
+
+## Development Status & Related Projects
+
+🚧 **This project is under active development** and may contain incomplete features or breaking changes. We welcome contributions and feedback!
+
+**Related MCP Servers for Reference:**
+- [bitbucket-server-mcp-server](https://github.com/garc33/bitbucket-server-mcp-server) - MCP server for Bitbucket Server (on-premises)
+- [mcp-server-atlassian-bitbucket](https://github.com/aashari/mcp-server-atlassian-bitbucket) - Alternative Atlassian Bitbucket MCP implementation
+
+These repositories provide excellent reference implementations and inspiration for Bitbucket API integration patterns.
 
 ## API Coverage
 
