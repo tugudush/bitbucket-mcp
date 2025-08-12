@@ -8,32 +8,33 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { createApiError } from './errors.js';
+import { initializeConfig } from './config.js';
+
+// Initialize configuration
+const { config } = initializeConfig();
 
 // Bitbucket API configuration
-const BITBUCKET_API_BASE = 'https://api.bitbucket.org/2.0';
+const BITBUCKET_API_BASE = config.BITBUCKET_API_BASE;
 
-// Read-only mode configuration
-const isReadOnlyMode = process.env.BITBUCKET_READ_ONLY === 'true';
-const readOnlyTools = [
-  'bb_list_workspaces',
-  'bb_get_workspace',
-  'bb_list_repositories',
-  'bb_get_repository',
-  'bb_browse_repository',
-  'bb_get_file_content',
-  'bb_get_branches',
-  'bb_get_commits',
-  'bb_get_issues',
-  'bb_get_issue',
-  'bb_get_pull_requests',
-  'bb_get_pull_request',
-  'bb_get_pull_request_activity',
-  'bb_get_pull_request_comments',
-  'bb_get_user',
-  'bb_get_current_user',
-  'bb_search_repositories',
-  'bb_search_code',
-];
+// API Constants
+const API_CONSTANTS = {
+  // Pagination limits
+  MAX_PAGE_SIZE: 100,
+  DEFAULT_PAGE_SIZE: 10,
+
+  // File content limits
+  MAX_FILE_LINES: 10000,
+  DEFAULT_FILE_LINES: 1000,
+
+  // Repository browsing limits
+  MAX_BROWSE_ITEMS: 100,
+  DEFAULT_BROWSE_ITEMS: 50,
+
+  // API configuration
+  REQUEST_TIMEOUT_MS: config.BITBUCKET_REQUEST_TIMEOUT,
+  RETRY_ATTEMPTS: 3,
+} as const;
 
 // TypeScript interfaces for Bitbucket API responses
 interface BitbucketUser {
@@ -233,7 +234,10 @@ const GetRepositorySchema = z.object({
 const ListRepositoriesSchema = z.object({
   workspace: z.string().describe('The workspace or username'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetPullRequestsSchema = z.object({
@@ -244,7 +248,10 @@ const GetPullRequestsSchema = z.object({
     .optional()
     .describe('Filter by pull request state'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetPullRequestSchema = z.object({
@@ -258,7 +265,10 @@ const GetPullRequestCommentsSchema = z.object({
   repo_slug: z.string().describe('The repository name'),
   pull_request_id: z.number().describe('The pull request ID'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetPullRequestActivitySchema = z.object({
@@ -266,7 +276,10 @@ const GetPullRequestActivitySchema = z.object({
   repo_slug: z.string().describe('The repository name'),
   pull_request_id: z.number().describe('The pull request ID'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetIssuesSchema = z.object({
@@ -290,7 +303,10 @@ const GetIssuesSchema = z.object({
     .optional()
     .describe('Filter by issue kind'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetIssueSchema = z.object({
@@ -307,14 +323,20 @@ const GetCommitsSchema = z.object({
     .optional()
     .describe('Branch name (defaults to main branch)'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetBranchesSchema = z.object({
   workspace: z.string().describe('The workspace or username'),
   repo_slug: z.string().describe('The repository name'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetFileContentSchema = z.object({
@@ -332,7 +354,9 @@ const GetFileContentSchema = z.object({
   limit: z
     .number()
     .optional()
-    .describe('Maximum number of lines to return (default: 1000, max: 10000)'),
+    .describe(
+      `Maximum number of lines to return (default: ${API_CONSTANTS.DEFAULT_FILE_LINES}, max: ${API_CONSTANTS.MAX_FILE_LINES})`
+    ),
 });
 
 const BrowseRepositorySchema = z.object({
@@ -349,7 +373,9 @@ const BrowseRepositorySchema = z.object({
   limit: z
     .number()
     .optional()
-    .describe('Maximum number of items to return (default: 50, max: 100)'),
+    .describe(
+      `Maximum number of items to return (default: ${API_CONSTANTS.DEFAULT_BROWSE_ITEMS}, max: ${API_CONSTANTS.MAX_BROWSE_ITEMS})`
+    ),
 });
 
 // Note: Bitbucket Cloud API does not provide code search endpoints
@@ -357,7 +383,10 @@ const BrowseRepositorySchema = z.object({
 
 const ListWorkspacesSchema = z.object({
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const GetUserSchema = z.object({
@@ -383,7 +412,10 @@ const SearchRepositoriesSchema = z.object({
     .string()
     .describe('Search query to filter repositories by name or description'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 const SearchCodeSchema = z.object({
@@ -402,7 +434,10 @@ const SearchCodeSchema = z.object({
     .optional()
     .describe('Filter code search by file extension'),
   page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 // Helper function to make authenticated requests to Bitbucket API
@@ -414,7 +449,7 @@ async function makeRequest<T = unknown>(
   const requestedMethod = (options.method || 'GET').toString().toUpperCase();
   if (requestedMethod !== 'GET') {
     throw new Error(
-      `Write operations are disabled: attempted ${requestedMethod} ${url}. This MCP server allows only GET requests.`
+      `Only GET requests are allowed. Attempted: ${requestedMethod} ${url}`
     );
   }
 
@@ -426,10 +461,10 @@ async function makeRequest<T = unknown>(
 
   // Add authentication if available
   // Priority: API Token (Basic auth with email) > App Password (Basic auth with username)
-  const apiToken = process.env.BITBUCKET_API_TOKEN;
-  const email = process.env.BITBUCKET_EMAIL;
-  const username = process.env.BITBUCKET_USERNAME;
-  const appPassword = process.env.BITBUCKET_APP_PASSWORD;
+  const apiToken = config.BITBUCKET_API_TOKEN;
+  const email = config.BITBUCKET_EMAIL;
+  const username = config.BITBUCKET_USERNAME;
+  const appPassword = config.BITBUCKET_APP_PASSWORD;
 
   if (apiToken && email) {
     // Use API Token with Basic authentication (recommended)
@@ -452,43 +487,17 @@ async function makeRequest<T = unknown>(
   if (!response.ok) {
     const errorText = await response.text();
 
-    // Enhanced error handling based on status codes
-    let errorMessage = `Bitbucket API error: ${response.status} ${response.statusText}`;
-
     // Try to parse error details
+    let errorData;
     try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.error?.message) {
-        errorMessage += ` - ${errorData.error.message}`;
-        if (errorData.error.detail) {
-          errorMessage += ` (${errorData.error.detail})`;
-        }
-      } else if (errorData.message) {
-        errorMessage += ` - ${errorData.message}`;
-      }
+      errorData = JSON.parse(errorText);
     } catch {
-      // If JSON parsing fails, include raw error text
-      if (errorText) {
-        errorMessage += ` - ${errorText}`;
-      }
+      // If JSON parsing fails, use raw error text
+      errorData = { message: errorText };
     }
 
-    // Add helpful context for common errors
-    if (response.status === 401) {
-      errorMessage +=
-        '\n\nTip: Check your authentication credentials (BITBUCKET_API_TOKEN + BITBUCKET_EMAIL or BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD)';
-    } else if (response.status === 403) {
-      errorMessage +=
-        '\n\nTip: Your credentials may not have sufficient permissions for this resource';
-    } else if (response.status === 404) {
-      errorMessage +=
-        '\n\nTip: The requested resource was not found - check the workspace/repository names';
-    } else if (response.status === 429) {
-      errorMessage +=
-        '\n\nTip: Rate limit exceeded - please wait before retrying';
-    }
-
-    throw new Error(errorMessage);
+    // Create and throw appropriate error type
+    throw createApiError(response.status, response.statusText, errorData, url);
   }
 
   return await response.json();
@@ -610,26 +619,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
   ];
 
-  // Filter tools based on read-only mode
-  const availableTools = isReadOnlyMode
-    ? allTools.filter(tool => readOnlyTools.includes(tool.name))
-    : allTools;
-
   return {
-    tools: availableTools,
+    tools: allTools,
   };
 });
 
 // Tool implementations
 server.setRequestHandler(CallToolRequestSchema, async request => {
   const { name, arguments: args } = request.params;
-
-  // Check if tool is allowed in read-only mode
-  if (isReadOnlyMode && !readOnlyTools.includes(name)) {
-    throw new Error(
-      `Tool ${name} is not available in read-only mode. Set BITBUCKET_READ_ONLY=false to enable all tools.`
-    );
-  }
 
   try {
     switch (name) {
@@ -665,7 +662,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const params = new URLSearchParams();
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}?${params}`;
         const data =
@@ -701,7 +701,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         if (parsed.state) params.append('state', parsed.state);
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests?${params}`;
         const data =
@@ -760,7 +763,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const params = new URLSearchParams();
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/comments?${params}`;
         const data =
@@ -798,7 +804,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const params = new URLSearchParams();
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/activity?${params}`;
         const data =
@@ -857,7 +866,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         if (parsed.kind) params.append('kind', parsed.kind);
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/issues?${params}`;
         const data =
@@ -918,7 +930,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const params = new URLSearchParams();
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         let url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/commits`;
         if (parsed.branch) {
@@ -956,7 +971,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const params = new URLSearchParams();
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches?${params}`;
         const data =
@@ -1031,7 +1049,9 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
         // Apply pagination if specified
         const start = parsed.start ? Math.max(1, parsed.start) : 1;
-        const limit = parsed.limit ? Math.min(parsed.limit, 10000) : 1000;
+        const limit = parsed.limit
+          ? Math.min(parsed.limit, API_CONSTANTS.MAX_FILE_LINES)
+          : API_CONSTANTS.DEFAULT_FILE_LINES;
         const endLine = Math.min(start + limit - 1, lines.length);
 
         const paginatedLines = lines.slice(start - 1, endLine);
@@ -1171,7 +1191,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         }
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}?${params}`;
         const data =
@@ -1236,7 +1259,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         params.append('search_query', searchQuery);
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/workspaces/${parsed.workspace}/search/code?${params}`;
         const data = await makeRequest<CodeSearchResponse>(url);
@@ -1312,7 +1338,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const params = new URLSearchParams();
         if (parsed.page) params.append('page', parsed.page.toString());
         if (parsed.pagelen)
-          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+          params.append(
+            'pagelen',
+            Math.min(parsed.pagelen, API_CONSTANTS.MAX_PAGE_SIZE).toString()
+          );
 
         const url = `${BITBUCKET_API_BASE}/workspaces?${params}`;
         const data =
@@ -1345,7 +1374,10 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const parsed = BrowseRepositorySchema.parse(args);
         const ref = parsed.ref || 'HEAD';
         const path = parsed.path || '';
-        const limit = Math.min(parsed.limit || 50, 100);
+        const limit = Math.min(
+          parsed.limit || API_CONSTANTS.DEFAULT_BROWSE_ITEMS,
+          API_CONSTANTS.MAX_BROWSE_ITEMS
+        );
 
         const params = new URLSearchParams();
         if (parsed.ref) params.append('at', parsed.ref);
@@ -1402,28 +1434,7 @@ async function runServer() {
   await server.connect(transport);
   console.error('Bitbucket MCP Server running on stdio');
   console.error(
-    `Mode: ${isReadOnlyMode ? 'READ-ONLY' : 'FULL ACCESS'} (BITBUCKET_READ_ONLY=${process.env.BITBUCKET_READ_ONLY || 'false'})`
-  );
-  console.error(
     'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
-  );
-
-  // Debug: Log environment variables
-  console.error('Debug - Environment variables:');
-  console.error(
-    '  BITBUCKET_API_TOKEN:',
-    process.env.BITBUCKET_API_TOKEN
-      ? 'SET (length: ' + process.env.BITBUCKET_API_TOKEN.length + ')'
-      : 'NOT SET'
-  );
-  console.error('  BITBUCKET_EMAIL:', process.env.BITBUCKET_EMAIL || 'NOT SET');
-  console.error(
-    '  BITBUCKET_USERNAME:',
-    process.env.BITBUCKET_USERNAME || 'NOT SET'
-  );
-  console.error(
-    '  BITBUCKET_APP_PASSWORD:',
-    process.env.BITBUCKET_APP_PASSWORD ? 'SET' : 'NOT SET'
   );
 }
 
