@@ -1,39 +1,129 @@
 # Bitbucket MCP Server
 
-⚠️ **WORK IN PROGRESS** - This is an actively developed project and may have breaking changes or incomplete features.
-
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot and Claude Desktop.
 
-## ✨ Enhanced Features
+## Quick Start
 
-**Repository Discovery & Exploration:**
-- **Workspace Discovery**: `bb_list_workspaces` - Discover accessible workspaces
-- **Enhanced Repository Browsing**: `bb_list_repositories` - List repositories across workspaces
-- **Directory Navigation**: `bb_browse_repository` - Explore repository structure and file organization
+### 1. Install & Build
+```bash
+git clone <repository-url>
+cd bitbucket-mcp
+npm install
+npm run build
+```
 
-**Advanced File Operations:**
-- **Paginated File Content**: `bb_get_file_content` - Read files with line-based pagination (1-10,000 lines)
-- **Directory Navigation**: `bb_browse_repository` - Explore repository structure and file organization
+### 2. Authentication
+Choose one authentication method:
 
-**Pull Request Management:**
-- **PR Overview**: `bb_get_pull_requests`, `bb_get_pull_request` - Browse and analyze pull requests
-- **Review System**: `bb_get_pull_request_comments`, `bb_get_pull_request_activity` - Track discussions and approvals
+**API Tokens (Recommended)**
+```bash
+export BITBUCKET_API_TOKEN="your-api-token"
+export BITBUCKET_EMAIL="your-atlassian-email"
+```
 
-**Issue Tracking:**
-- **Issue Management**: `bb_get_issues`, `bb_get_issue` - Monitor bugs and feature requests
+**App Passwords (Legacy - deprecated Sept 9, 2025)**
+```bash
+export BITBUCKET_USERNAME="your-username"  
+export BITBUCKET_APP_PASSWORD="your-app-password"
+```
 
-**Version Control:**
-- **Branch Operations**: `bb_get_branches`, `bb_get_commits` - Explore repository history
+### 3. Integration
 
-**User & Workspace Info:**
-- **Identity**: `bb_get_user`, `bb_get_workspace` - Access user and workspace details
+**VS Code GitHub Copilot**
+```json
+// .vscode/mcp.json
+{
+  "servers": {
+    "bitbucket-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./build/index.js"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
 
-**Code Search:**
-- **Advanced Code Search**: `bb_search_code` - Search for code across repositories with language filtering and rich match highlighting
+**Claude Desktop**
+```json
+// claude_desktop_config.json
+{
+  "mcpServers": {
+    "bitbucket": {
+      "command": "node",
+      "args": ["/path/to/build/index.js"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
 
-## 🔒 Security Features
+## Features
 
-This server is **read-only by design** - all operations are safe, non-modifying queries. Perfect for production deployments and CI/CD integration without any risk of data modification.
+**Repository Management**
+- `bb_list_workspaces` - Discover accessible workspaces
+- `bb_list_repositories` - List repositories across workspaces
+- `bb_get_repository` - Get repository details
+- `bb_browse_repository` - Explore directory structure
+- `bb_get_file_content` - Read files with pagination (1-10,000 lines)
+
+**Pull Requests & Issues**
+- `bb_get_pull_requests`, `bb_get_pull_request` - Browse pull requests
+- `bb_get_pull_request_comments`, `bb_get_pull_request_activity` - Track reviews
+- `bb_get_issues`, `bb_get_issue` - Monitor issues
+
+**Version Control**
+- `bb_get_branches`, `bb_get_commits` - Explore repository history
+
+**Search & Discovery**
+- `bb_search_code` - Advanced code search with language filtering
+- `bb_search_repositories` - Find repositories
+
+**User & Workspace Info**
+- `bb_get_user`, `bb_get_current_user` - User information
+- `bb_get_workspace` - Workspace details
+
+## Usage Examples
+
+**In VS Code Copilot Chat or Claude:**
+- "List repositories in myworkspace"
+- "Show open pull requests for myworkspace/myrepo"
+- "Get README.md from myworkspace/myrepo"
+- "Search for 'authentication' code in myworkspace/myrepo"
+- "Show recent commits on main branch"
+
+## Development
+
+```bash
+npm run ltf     # Lint + Typecheck + Format
+npm run build   # Compile TypeScript  
+npm run watch   # Development mode
+node build/index.js  # Test server
+```
+
+## Security & Limitations
+
+- ✅ **Read-only by design**: No write/delete/modify operations possible
+- ✅ **Safe for production**: No destructive actions supported  
+- ✅ **Authenticated access**: Uses API tokens or App Passwords for private repos
+- ⚠️ **Rate limiting**: Subject to Bitbucket API limits
+- ⚠️ **Code search**: Requires enablement in Bitbucket account settings
+
+## Requirements
+
+- **Code Search**: Enable at https://bitbucket.org/search for `bb_search_code` functionality
+- **Node.js**: Version 16+ with ES modules support
+- **Authentication**: API token + email or username + app password
+
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
 
 ## 📋 Code Search Requirements
 
