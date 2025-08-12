@@ -30,6 +30,8 @@ const readOnlyTools = [
   'bb_get_pull_request_activity',
   'bb_get_pull_request_comments',
   'bb_get_user',
+  'bb_get_current_user',
+  'bb_search_repositories',
   // Note: Search functionality removed - Bitbucket Cloud API doesn't provide code search endpoints
 ];
 
@@ -322,11 +324,29 @@ const ListWorkspacesSchema = z.object({
 });
 
 const GetUserSchema = z.object({
-  username: z.string().describe('The username to get information about'),
+  username: z
+    .string()
+    .optional()
+    .describe(
+      'The username to get information about. If not provided, returns information about the authenticated user.'
+    ),
 });
 
 const GetWorkspaceSchema = z.object({
   workspace: z.string().describe('The workspace name'),
+});
+
+const GetCurrentUserSchema = z.object({
+  // No parameters needed for current user
+});
+
+const SearchRepositoriesSchema = z.object({
+  workspace: z.string().describe('The workspace or username to search in'),
+  query: z
+    .string()
+    .describe('Search query to filter repositories by name or description'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z.number().optional().describe('Number of items per page (max 100)'),
 });
 
 // Helper function to make authenticated requests to Bitbucket API
@@ -375,9 +395,44 @@ async function makeRequest<T = unknown>(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `Bitbucket API error: ${response.status} ${response.statusText} - ${errorText}`
-    );
+
+    // Enhanced error handling based on status codes
+    let errorMessage = `Bitbucket API error: ${response.status} ${response.statusText}`;
+
+    // Try to parse error details
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.error?.message) {
+        errorMessage += ` - ${errorData.error.message}`;
+        if (errorData.error.detail) {
+          errorMessage += ` (${errorData.error.detail})`;
+        }
+      } else if (errorData.message) {
+        errorMessage += ` - ${errorData.message}`;
+      }
+    } catch {
+      // If JSON parsing fails, include raw error text
+      if (errorText) {
+        errorMessage += ` - ${errorText}`;
+      }
+    }
+
+    // Add helpful context for common errors
+    if (response.status === 401) {
+      errorMessage +=
+        '\n\nTip: Check your authentication credentials (BITBUCKET_API_TOKEN + BITBUCKET_EMAIL or BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD)';
+    } else if (response.status === 403) {
+      errorMessage +=
+        '\n\nTip: Your credentials may not have sufficient permissions for this resource';
+    } else if (response.status === 404) {
+      errorMessage +=
+        '\n\nTip: The requested resource was not found - check the workspace/repository names';
+    } else if (response.status === 429) {
+      errorMessage +=
+        '\n\nTip: Rate limit exceeded - please wait before retrying';
+    }
+
+    throw new Error(errorMessage);
   }
 
   return await response.json();
@@ -471,8 +526,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     // Note: Search tools removed - Bitbucket Cloud API doesn't provide search endpoints
     {
       name: 'bb_get_user',
-      description: 'Get information about a Bitbucket user',
+      description:
+        'Get information about a Bitbucket user. If no username is provided, returns information about the authenticated user.',
       inputSchema: zodToJsonSchema(GetUserSchema),
+    },
+    {
+      name: 'bb_get_current_user',
+      description: 'Get information about the currently authenticated user.',
+      inputSchema: zodToJsonSchema(GetCurrentUserSchema),
+    },
+    {
+      name: 'bb_search_repositories',
+      description:
+        'Search for repositories within a workspace by name or description.',
+      inputSchema: zodToJsonSchema(SearchRepositoriesSchema),
     },
     {
       name: 'bb_get_workspace',
@@ -932,7 +999,88 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
       case 'bb_get_user': {
         const parsed = GetUserSchema.parse(args);
-        const url = `${BITBUCKET_API_BASE}/users/${parsed.username}`;
+
+        // If no username provided, get the authenticated user
+        if (!parsed.username) {
+          const url = `${BITBUCKET_API_BASE}/user`;
+          const user = await makeRequest<BitbucketUser>(url);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text:
+                  `User: ${user.display_name} (@${user.username})\n` +
+                  `Account ID: ${user.account_id}\n` +
+                  `Type: ${user.type}\n` +
+                  `Website: ${user.website || 'None'}\n` +
+                  `Location: ${user.location || 'Not specified'}\n` +
+                  `Created: ${user.created_on}`,
+              },
+            ],
+          };
+        }
+
+        // If username provided, try to find the user in workspaces
+        try {
+          // Get user's workspaces first
+          const workspacesUrl = `${BITBUCKET_API_BASE}/workspaces`;
+          const workspacesData =
+            await makeRequest<BitbucketApiResponse<BitbucketWorkspace>>(
+              workspacesUrl
+            );
+
+          if (workspacesData.values.length > 0) {
+            const firstWorkspace = workspacesData.values[0];
+            const memberUrl = `${BITBUCKET_API_BASE}/workspaces/${firstWorkspace.slug}/members/${parsed.username}`;
+            const member = await makeRequest<BitbucketUser>(memberUrl);
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text:
+                    `User: ${member.display_name} (@${member.username})\n` +
+                    `Account ID: ${member.account_id}\n` +
+                    `Type: ${member.type}\n` +
+                    `Website: ${member.website || 'None'}\n` +
+                    `Location: ${member.location || 'Not specified'}\n` +
+                    `Created: ${member.created_on}`,
+                },
+              ],
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Error: No accessible workspaces found to search for user "${parsed.username}".`,
+                },
+              ],
+              isError: true,
+            };
+          }
+        } catch (error) {
+          console.error('User lookup failed:', error);
+          return {
+            content: [
+              {
+                type: 'text',
+                text:
+                  `Error: Unable to retrieve user information for "${parsed.username}". This could be because:\n` +
+                  `1. The user doesn't exist\n` +
+                  `2. The user is not a member of your accessible workspaces\n` +
+                  `3. You don't have permission to view this user's information\n\n` +
+                  `Try using bb_get_user without a username to get your own user information.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      case 'bb_get_current_user': {
+        const url = `${BITBUCKET_API_BASE}/user`;
         const user = await makeRequest<BitbucketUser>(url);
 
         return {
@@ -940,12 +1088,52 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
             {
               type: 'text',
               text:
-                `User: ${user.display_name} (@${user.username})\n` +
+                `Current User: ${user.display_name} (@${user.username})\n` +
                 `Account ID: ${user.account_id}\n` +
                 `Type: ${user.type}\n` +
                 `Website: ${user.website || 'None'}\n` +
                 `Location: ${user.location || 'Not specified'}\n` +
                 `Created: ${user.created_on}`,
+            },
+          ],
+        };
+      }
+
+      case 'bb_search_repositories': {
+        const parsed = SearchRepositoriesSchema.parse(args);
+        const params = new URLSearchParams();
+
+        // Build search query - Bitbucket API uses 'q' parameter for filtering
+        if (parsed.query) {
+          params.append('q', `name~"${parsed.query}"`);
+        }
+        if (parsed.page) params.append('page', parsed.page.toString());
+        if (parsed.pagelen)
+          params.append('pagelen', Math.min(parsed.pagelen, 100).toString());
+
+        const url = `${BITBUCKET_API_BASE}/repositories/${parsed.workspace}?${params}`;
+        const data =
+          await makeRequest<BitbucketApiResponse<BitbucketRepository>>(url);
+
+        const repoList = data.values
+          .map(
+            (repo: BitbucketRepository) =>
+              `- ${repo.name} (${repo.full_name})\n` +
+              `  Description: ${repo.description || 'No description'}\n` +
+              `  Language: ${repo.language || 'Not specified'}\n` +
+              `  Private: ${repo.is_private}\n` +
+              `  Updated: ${repo.updated_on}`
+          )
+          .join('\n\n');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Repository Search Results in ${parsed.workspace} for "${parsed.query}":\n\n${repoList}\n\n` +
+                `Page: ${data.page || 1}\n` +
+                `Total: ${data.size || data.values.length} repositories`,
             },
           ],
         };
