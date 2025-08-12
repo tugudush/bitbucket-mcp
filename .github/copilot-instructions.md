@@ -6,10 +6,10 @@
 
 This is a **Model Context Protocol (MCP)** server providing read-only access to Bitbucket API v2.0. The architecture follows a single-file pattern with clear separation of concerns:
 
-- **TypeScript interfaces** (lines 15-142 in `src/index.ts`) - Strict typing for all Bitbucket API responses
-- **Zod schemas** (lines 144-299) - Input validation using `z.object()` with descriptive field documentation
-- **Tool registration** (lines 455-525) - Each tool uses `zodToJsonSchema()` for automatic schema generation  
-- **Tool implementations** (lines 530-1200+) - Switch-case pattern with typed `makeRequest<T>()` calls
+- **TypeScript interfaces** - Strict typing for all Bitbucket API responses
+- **Zod schemas** - Input validation using `z.object()` with descriptive field documentation
+- **Tool registration** - Each tool uses `zodToJsonSchema()` for automatic schema generation  
+- **Tool implementations** - Switch-case pattern with typed `makeRequest<T>()` calls
 - **Authentication system** - Supports both API tokens (recommended) and App Passwords (legacy)
 - **Branch handling** - Uses `?at=branch` for listings and `/src/{ref}/{file}` for file content
 - **Read-only mode** - Optional security enhancement with `BITBUCKET_READ_ONLY=true`
@@ -27,7 +27,7 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 
 ### Code Search Implementation
 - **Working endpoint**: `/2.0/workspaces/{workspace}/search/code` 
-- **Requirement**: Code search must be enabled in Bitbucket account settings
+- **Requirement**: Code search must be enabled in Bitbucket account settings `https://bitbucket.org/search`
 - **Features**: Language filtering, repository scoping, rich match highlighting with line numbers
 
 ### Security Enhancement: Read-Only Mode
@@ -234,9 +234,6 @@ See existing tools like `bb_browse_repository` as reference pattern for enhanced
 - **File pagination**: Enhanced `bb_get_file_content` with line-based pagination
 - **Code search**: `bb_search_code` with language filtering and rich match highlighting
 - **Read-only mode**: Security enhancement with tool filtering and runtime protection
-
-### Removed Features (2025-08)
-- **None** - All planned features implemented and operational
 
 ### Branch Handling (Fixed 2025-08)
 - **Directory listings**: Use `?at=branch` query parameter
