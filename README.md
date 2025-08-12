@@ -80,7 +80,7 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
       "args": ["./build/index.js"],
       "env": {
         "BITBUCKET_API_TOKEN": "your-token",
-        "BITBUCKET_EMAIL": "your-email"
+        "BITBUCKET_EMAIL": "jerome2kph@gmail.com"
       }
     }
   }
