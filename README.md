@@ -12,8 +12,11 @@ npm install
 npm run build
 ```
 
-### 2. Authentication
-Choose one authentication method:
+### 2. Authentication (Optional - for testing only)
+
+**⚠️ Note**: This step is only needed for manual testing. If you're going directly to step 3 (Integration), you can skip this step as authentication is configured in the integration files.
+
+For manual server testing, choose one authentication method:
 
 **API Tokens (Recommended)**
 ```bash
@@ -27,7 +30,11 @@ export BITBUCKET_USERNAME="your-username"
 export BITBUCKET_APP_PASSWORD="your-app-password"
 ```
 
-### 3. Integration
+**Without Authentication**: The server will work with public repositories only.
+
+### 3. Integration (Authentication included here)
+
+**For most users, this is where you actually configure authentication credentials.**
 
 **VS Code GitHub Copilot**
 ```json
@@ -63,6 +70,8 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
   }
 }
 ```
+
+**💡 Tip**: Replace `/path/to/build/index.js` with the absolute path to your built server, and add your actual Bitbucket credentials to access private repositories.
 
 ## Features
 
