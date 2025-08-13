@@ -2,6 +2,12 @@
 
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot and Claude Desktop.
 
+## Requirements
+
+- **Code Search**: Enable at https://bitbucket.org/search for `bb_search_code` functionality
+- **Node.js**: Version 16+ with ES modules support
+- **Authentication**: API token + email or username + app password
+
 ## Quick Start
 
 ### 1. Install & Build
@@ -145,12 +151,6 @@ node build/index.js  # Test server
 - ⚠️ **Rate limiting**: Subject to Bitbucket API limits
 - ⚠️ **Code search**: Requires enablement in Bitbucket account settings
 - ⚠️ **File size limits**: Large files may be truncated
-
-## Requirements
-
-- **Code Search**: Enable at https://bitbucket.org/search for `bb_search_code` functionality
-- **Node.js**: Version 16+ with ES modules support
-- **Authentication**: API token + email or username + app password
 
 ## Development Status & Related Projects
 
