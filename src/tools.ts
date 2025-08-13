@@ -1,5 +1,6 @@
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { CallToolRequest, Tool } from '@modelcontextprotocol/sdk/types.js';
+import { BitbucketApiError } from './errors.js';
 import {
   GetRepositorySchema,
   ListRepositoriesSchema,
@@ -548,8 +549,14 @@ export async function handleToolCall(request: CallToolRequest): Promise<{
       case 'bb_get_file_content': {
         const parsed = GetFileContentSchema.parse(args);
         const ref = parsed.ref || 'HEAD';
+        // Encode ref and file path to handle special characters
+        const encodedRef = encodeURIComponent(ref);
+        const encodedFilePath = parsed.file_path
+          .split('/')
+          .map(segment => encodeURIComponent(segment))
+          .join('/');
         const url = buildApiUrl(
-          `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${ref}/${parsed.file_path}`
+          `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedFilePath}`
         );
 
         // Use a custom request for text content instead of makeRequest which expects JSON
@@ -603,48 +610,117 @@ export async function handleToolCall(request: CallToolRequest): Promise<{
 
       case 'bb_browse_repository': {
         const parsed = BrowseRepositorySchema.parse(args);
-        const ref = parsed.ref || 'master';
+        let ref = parsed.ref;
+
+        // If no ref specified, fetch repository info to get default branch
+        if (!ref) {
+          try {
+            const repoUrl = buildApiUrl(
+              `/repositories/${parsed.workspace}/${parsed.repo_slug}`
+            );
+            const repoData = await makeRequest<BitbucketRepository>(repoUrl);
+            ref = repoData.mainbranch?.name || 'main';
+          } catch {
+            // Fallback to 'main' if we can't get repository info
+            ref = 'main';
+          }
+        }
+
         const path = parsed.path || '';
-        let url = buildApiUrl(
-          `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${ref}`
-        );
+        let url: string;
+
         if (path) {
-          url += `/${path}`;
+          // For subdirectories, we need to get the commit SHA first
+          // because the /src/{ref}/{path} pattern doesn't work with branch names containing slashes
+          try {
+            const branchUrl = buildApiUrl(
+              `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches/${encodeURIComponent(ref)}`
+            );
+            const branchData = await makeRequest<{ target: { hash: string } }>(
+              branchUrl
+            );
+            const commitSha = branchData.target.hash;
+
+            // Use /src/{commit_sha}/{path} pattern for subdirectories
+            const encodedPath = path
+              .split('/')
+              .map(segment => encodeURIComponent(segment))
+              .join('/');
+            url = buildApiUrl(
+              `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${commitSha}/${encodedPath}`
+            );
+            // Ensure trailing slash for directory browsing
+            if (!url.endsWith('/')) {
+              url += '/';
+            }
+          } catch {
+            // If we can't get the commit SHA, fall back to trying the branch name directly
+            const encodedRef = encodeURIComponent(ref);
+            const encodedPath = path
+              .split('/')
+              .map(segment => encodeURIComponent(segment))
+              .join('/');
+            url = buildApiUrl(
+              `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedPath}`
+            );
+            // Ensure trailing slash for directory browsing
+            if (!url.endsWith('/')) {
+              url += '/';
+            }
+          }
+        } else {
+          // For root directory, use /src?at={ref} pattern (works with branch names)
+          url = buildApiUrl(
+            `/repositories/${parsed.workspace}/${parsed.repo_slug}/src`
+          );
+          // Ensure trailing slash for directory browsing
+          if (!url.endsWith('/')) {
+            url += '/';
+          }
+          url += `?at=${encodeURIComponent(ref)}`;
         }
-        // Ensure trailing slash for directory browsing
-        if (!url.endsWith('/')) {
-          url += '/';
+
+        try {
+          const data = await makeRequest<BitbucketSrcListingResponse>(url);
+
+          const limit = parsed.limit
+            ? Math.min(parsed.limit, API_CONSTANTS.MAX_BROWSE_ITEMS)
+            : API_CONSTANTS.DEFAULT_BROWSE_ITEMS;
+          const items = data.values.slice(0, limit);
+
+          const itemList = items
+            .map(item => {
+              const isDir = item.type === 'commit_directory';
+              const icon = isDir ? '📁' : '📄';
+              const size = item.size ? ` (${item.size} bytes)` : '';
+              return `${icon} ${item.path}${size}`;
+            })
+            .join('\n');
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text:
+                  `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
+                  `Path: /${path}\n` +
+                  `Ref: ${ref}\n` +
+                  `Items (${items.length} of ${data.size || data.values.length} total):\n\n${itemList}`,
+              },
+            ],
+          };
+        } catch (error) {
+          if (error instanceof BitbucketApiError && error.status === 404) {
+            // Enhanced error message for branch/commit not found
+            throw new BitbucketApiError(
+              404,
+              'Not Found',
+              `Branch, tag, or commit '${ref}' not found in repository ${parsed.workspace}/${parsed.repo_slug}`,
+              `Try specifying a different branch with the 'ref' parameter. Common branch names are 'main', 'master', or 'develop'. Use bb_get_branches to list available branches.`
+            );
+          }
+          throw error;
         }
-        // Don't add 'at' parameter when ref is already in the URL path
-
-        const data = await makeRequest<BitbucketSrcListingResponse>(url);
-
-        const limit = parsed.limit
-          ? Math.min(parsed.limit, API_CONSTANTS.MAX_BROWSE_ITEMS)
-          : API_CONSTANTS.DEFAULT_BROWSE_ITEMS;
-        const items = data.values.slice(0, limit);
-
-        const itemList = items
-          .map(item => {
-            const isDir = item.type === 'commit_directory';
-            const icon = isDir ? '📁' : '📄';
-            const size = item.size ? ` (${item.size} bytes)` : '';
-            return `${icon} ${item.path}${size}`;
-          })
-          .join('\n');
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text:
-                `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
-                `Path: /${path}\n` +
-                `Ref: ${ref}\n` +
-                `Items (${items.length} of ${data.size || data.values.length} total):\n\n${itemList}`,
-            },
-          ],
-        };
       }
 
       case 'bb_get_user': {

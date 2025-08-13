@@ -25,6 +25,7 @@ export interface BitbucketRepository {
   forks_count?: number;
   watchers_count?: number;
   website?: string;
+  mainbranch?: { name: string };
   links?: {
     clone?: Array<{ name: string; href: string }>;
   };

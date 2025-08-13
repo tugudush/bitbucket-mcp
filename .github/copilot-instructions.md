@@ -239,16 +239,64 @@ const prList = data.values
 
 ## Recent Fixes & Patterns
 
+### Authentication Configuration Fix (2025-08)
+**Problem**: Configuration was loaded at module import time, causing environment variables set after import to be ignored.
+**Solution**: Implemented lazy config loading using `getConfig()` function in `makeRequest()`.
+```typescript
+// Fixed pattern in src/api.ts
+function getConfig() {
+  return loadConfig();
+}
+
+export async function makeRequest<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
+  // Get config dynamically to handle environment changes
+  const config = getConfig();
+  // ... rest of function
+}
+```
+
+### Repository Browsing with Complex Branch Names (2025-08)
+**Problem**: Branch names with forward slashes (e.g., `feature/SSP-1024`) failed when browsing subdirectories due to Bitbucket API URL parsing issues.
+**Solution**: Hybrid approach using different URL patterns for root vs subdirectory browsing.
+
+**Root Directory Pattern** (works with any branch name):
+```
+/repositories/{workspace}/{repo}/src/?at={branch}
+```
+
+**Subdirectory Pattern** (requires commit SHA):
+```
+/repositories/{workspace}/{repo}/src/{commit_sha}/{path}/
+```
+
 ### Enhanced Features (2025-08)
 - **Workspace discovery**: `bb_list_workspaces` for workspace exploration
-- **Repository browsing**: `bb_browse_repository` for directory navigation
+- **Repository browsing**: `bb_browse_repository` for directory navigation with full branch support
+- **Branch compatibility**: Handles complex branch names like `feature/SSP-1024`, `hotfix/security-patch`
 - **File pagination**: Enhanced `bb_get_file_content` with line-based pagination
 - **Code search**: `bb_search_code` with language filtering and rich match highlighting
+- **Authentication fixes**: Lazy config loading resolves environment variable timing issues
 
 ### Branch Handling (Fixed 2025-08)
-- **Directory listings**: Use `?at=branch` query parameter
-- **File content**: Use `/src/{ref}/{file_path}` URL pattern
-- **Avoid**: `/src/{file_path}?at=branch` (causes 404s)
+- **Root directory listings**: Use `?at=branch` query parameter (works with all branch names)
+- **Subdirectory browsing**: Use `/src/{commit_sha}/{path}` pattern (resolves branch to commit SHA first)
+- **Branch name support**: Handles special characters like `feature/SSP-1024` correctly
+- **Dynamic commit resolution**: Automatically fetches commit SHA for branches when browsing subdirectories
+
+### Repository Browsing Pattern (Enhanced 2025-08)
+**Hybrid URL approach for robust branch handling:**
+```typescript
+if (path) {
+  // For subdirectories: Get commit SHA first, then use /src/{commit_sha}/{path}
+  const branchUrl = buildApiUrl(`/repositories/${workspace}/${repo_slug}/refs/branches/${encodeURIComponent(ref)}`);
+  const branchData = await makeRequest<{ target: { hash: string } }>(branchUrl);
+  const commitSha = branchData.target.hash;
+  url = buildApiUrl(`/repositories/${workspace}/${repo_slug}/src/${commitSha}/${encodedPath}/`);
+} else {
+  // For root directory: Use ?at=branch (works with branch names containing slashes)
+  url = buildApiUrl(`/repositories/${workspace}/${repo_slug}/src/?at=${encodeURIComponent(ref)}`);
+}
+```
 
 ### File Content URL Pattern (Fixed 2025-08)  
 ```typescript
@@ -266,8 +314,12 @@ const url = `${BITBUCKET_API_BASE}/repositories/${workspace}/${repo_slug}/src/${
 # List accessible workspaces
 bb_list_workspaces --pagelen 10
 
-# Browse repository structure  
-bb_browse_repository --workspace myworkspace --repo_slug myrepo --limit 20
+# Browse repository structure with complex branch names
+bb_browse_repository --workspace myworkspace --repo_slug myrepo --ref "feature/SSP-1024" --limit 20
+bb_browse_repository --workspace myworkspace --repo_slug myrepo --ref "hotfix/security-fix" --path "src"
+
+# Browse subdirectories (automatically resolves commit SHA)
+bb_browse_repository --workspace myworkspace --repo_slug myrepo --ref "feature/deployment" --path "src/components"
 
 # Read file with pagination
 bb_get_file_content --workspace myworkspace --repo_slug myrepo --file_path README.md --start 1 --limit 50
