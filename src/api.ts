@@ -6,11 +6,13 @@ import { API_CONSTANTS } from './schemas.js';
  * Bitbucket API configuration and request handling
  */
 
-// Initialize configuration
-const config = loadConfig();
+// Get config dynamically to handle environment changes
+function getConfig() {
+  return loadConfig();
+}
 
 // Bitbucket API base URL
-export const BITBUCKET_API_BASE = config.BITBUCKET_API_BASE;
+export const BITBUCKET_API_BASE = 'https://api.bitbucket.org/2.0';
 
 /**
  * Helper function to make authenticated requests to Bitbucket API
@@ -36,6 +38,7 @@ export async function makeRequest<T = unknown>(
 
   // Add authentication if available
   // Priority: API Token (Basic auth with email) > App Password (Basic auth with username)
+  const config = getConfig();
   const apiToken = config.BITBUCKET_API_TOKEN;
   const email = config.BITBUCKET_EMAIL;
   const username = config.BITBUCKET_USERNAME;

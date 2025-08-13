@@ -85,7 +85,7 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 - `bb_list_workspaces` - Discover accessible workspaces
 - `bb_list_repositories` - List repositories across workspaces
 - `bb_get_repository` - Get repository details
-- `bb_browse_repository` - Explore directory structure
+- `bb_browse_repository` - Explore directory structure (supports branches with slashes like `feature/SSP-1024`)
 - `bb_get_file_content` - Read files with pagination (1-10,000 lines)
 
 **Pull Requests & Issues**
@@ -109,7 +109,7 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 **Repository Discovery:**
 - "List all my accessible workspaces"
 - "Browse the root directory of myworkspace/myrepo"
-- "Show the structure of src/components in myworkspace/myrepo"
+- "Browse the tests directory in feature/deployment-fixes branch"
 
 **Advanced File Operations:**
 - "Read lines 100-200 of src/app.py from myworkspace/myrepo"
@@ -148,6 +148,8 @@ node build/index.js  # Test server
 - ✅ **Read-only by design**: No write/delete/modify operations possible
 - ✅ **Safe for production**: No destructive actions supported  
 - ✅ **Authenticated access**: Uses API tokens or App Passwords for private repos
+- ✅ **Branch support**: Handles branch names with special characters (e.g., `feature/SSP-1024`)
+- ✅ **Dynamic commit resolution**: Automatically resolves branch names to commit SHAs for subdirectory browsing
 - ⚠️ **Rate limiting**: Subject to Bitbucket API limits
 - ⚠️ **Code search**: Requires enablement in Bitbucket account settings
 - ⚠️ **File size limits**: Large files may be truncated
