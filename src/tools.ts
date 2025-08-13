@@ -548,16 +548,53 @@ export async function handleToolCall(request: CallToolRequest): Promise<{
 
       case 'bb_get_file_content': {
         const parsed = GetFileContentSchema.parse(args);
-        const ref = parsed.ref || 'HEAD';
-        // Encode ref and file path to handle special characters
-        const encodedRef = encodeURIComponent(ref);
-        const encodedFilePath = parsed.file_path
-          .split('/')
-          .map(segment => encodeURIComponent(segment))
-          .join('/');
-        const url = buildApiUrl(
-          `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedFilePath}`
-        );
+        let ref = parsed.ref || 'HEAD';
+
+        // If no ref specified, fetch repository info to get default branch
+        if (ref === 'HEAD') {
+          try {
+            const repoUrl = buildApiUrl(
+              `/repositories/${parsed.workspace}/${parsed.repo_slug}`
+            );
+            const repoData = await makeRequest<BitbucketRepository>(repoUrl);
+            ref = repoData.mainbranch?.name || 'main';
+          } catch {
+            // Fallback to 'main' if we can't get repository info
+            ref = 'main';
+          }
+        }
+
+        // Use the same robust approach as bb_browse_repository
+        // Get commit SHA first to handle branch names with slashes
+        let url: string;
+        try {
+          const branchUrl = buildApiUrl(
+            `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches/${encodeURIComponent(ref)}`
+          );
+          const branchData = await makeRequest<{ target: { hash: string } }>(
+            branchUrl
+          );
+          const commitSha = branchData.target.hash;
+
+          // Use /src/{commit_sha}/{file_path} pattern
+          const encodedFilePath = parsed.file_path
+            .split('/')
+            .map(segment => encodeURIComponent(segment))
+            .join('/');
+          url = buildApiUrl(
+            `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${commitSha}/${encodedFilePath}`
+          );
+        } catch {
+          // If we can't get the commit SHA, fall back to trying the branch name directly
+          const encodedRef = encodeURIComponent(ref);
+          const encodedFilePath = parsed.file_path
+            .split('/')
+            .map(segment => encodeURIComponent(segment))
+            .join('/');
+          url = buildApiUrl(
+            `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedFilePath}`
+          );
+        }
 
         // Use a custom request for text content instead of makeRequest which expects JSON
         const { loadConfig } = await import('./config.js');
