@@ -109,7 +109,6 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 **Repository Discovery:**
 - "List all my accessible workspaces"
 - "Browse the root directory of myworkspace/myrepo"
-- "Show the structure of src/components in myworkspace/myrepo on feature/SSP-1024 branch"
 - "Browse the tests directory in feature/deployment-fixes branch"
 
 **Advanced File Operations:**
