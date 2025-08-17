@@ -245,9 +245,38 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 
 If you find this project helpful, please consider supporting its development:
 
+### Traditional Sponsorship
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/tugudush)
 
-You can also run `npm fund` in your project to see funding information.
+### Crypto Donations
+
+Support this project with cryptocurrency:
+
+**Bitcoin (BTC)**
+```
+17v2iVCXoxrKMdnUTEqETGfjxUXNnhyE2k
+```
+
+**Ethereum (ETH)**
+```
+0xc924d430473bfec6d51e3aac5f4dd9adbe77e84e
+```
+
+**Ripple (XRP)**
+```
+Address:
+rpWJmMcPM4ynNfvhaZFYmPhBq5FYfDJBZu
+
+Destination Tag:
+1135041300
+```
+
+**Solana (SOL)**
+```
+89pm44ME76HxrCXtWxotjvkoXHNYFAfkzP8GS88pg7Fg
+```
+
+You can also run `npm fund` in your project to see all funding information.
 
 ## Roadmap
 
