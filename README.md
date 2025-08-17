@@ -49,6 +49,48 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 
 **For most users, this is where you actually configure authentication credentials.**
 
+#### Option A: Using NPM Global Installation (Recommended)
+
+After installing with `npm install -g @tugudush/bitbucket-mcp`:
+
+**VS Code GitHub Copilot**
+```json
+// .vscode/mcp.json
+{
+  "servers": {
+    "bitbucket-mcp": {
+      "type": "stdio",
+      "command": "bitbucket-mcp",
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop**
+```json
+// claude_desktop_config.json
+{
+  "mcpServers": {
+    "bitbucket": {
+      "command": "npx",
+      "args": ["@tugudush/bitbucket-mcp"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+#### Option B: Using Local Build (For Development)
+
+If you built from source:
+
 **VS Code GitHub Copilot**
 ```json
 // .vscode/mcp.json
@@ -84,7 +126,10 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 }
 ```
 
-**💡 Tip**: Replace `/path/to/build/index.js` with the absolute path to your built server, and add your actual Bitbucket credentials to access private repositories.
+**💡 Tips**: 
+- **Option A (NPM)**: Much simpler setup, no paths to manage, automatic updates available
+- **Option B (Local)**: Replace `/path/to/build/index.js` with the absolute path to your built server
+- Add your actual Bitbucket credentials to access private repositories
 
 ## Features
 
