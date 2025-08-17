@@ -8,15 +8,22 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 - **Node.js**: Version 16+ with ES modules support
 - **Authentication**: API token + email or username + app password
 
-## Quick Start
+## Installation
 
-### 1. Install & Build
+### Option 1: Install from NPM (Recommended)
+```bash
+npm install -g @tugudush/bitbucket-mcp
+```
+
+### Option 2: Build from Source
 ```bash
 git clone <repository-url>
 cd bitbucket-mcp
 npm install
 npm run build
 ```
+
+## Quick Start
 
 ### 2. Authentication (Optional - for testing only)
 
