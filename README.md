@@ -17,7 +17,7 @@ npm install -g @tugudush/bitbucket-mcp
 
 ### Option 2: Build from Source
 ```bash
-git clone <repository-url>
+git clone https://github.com/tugudush/bitbucket-mcp.git
 cd bitbucket-mcp
 npm install
 npm run build
