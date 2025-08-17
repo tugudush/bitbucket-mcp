@@ -210,12 +210,6 @@ node build/index.js  # Test server
 
 🚧 **This project is under active development** and may contain incomplete features or breaking changes. We welcome contributions and feedback!
 
-**Related MCP Servers for Reference:**
-- [bitbucket-server-mcp-server](https://github.com/garc33/bitbucket-server-mcp-server) - MCP server for Bitbucket Server (on-premises)
-- [mcp-server-atlassian-bitbucket](https://github.com/aashari/mcp-server-atlassian-bitbucket) - Alternative Atlassian Bitbucket MCP implementation
-
-These repositories provide excellent reference implementations and inspiration for Bitbucket API integration patterns.
-
 ## API Coverage
 
 The server implements tools for the most commonly used Bitbucket API endpoints:
