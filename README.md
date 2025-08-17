@@ -206,7 +206,7 @@ node build/index.js  # Test server
 - ⚠️ **Code search**: Requires enablement in Bitbucket account settings
 - ⚠️ **File size limits**: Large files may be truncated
 
-## Development Status & Related Projects
+## Development Status
 
 🚧 **This project is under active development** and may contain incomplete features or breaking changes. We welcome contributions and feedback!
 
