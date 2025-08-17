@@ -8,15 +8,22 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 - **Node.js**: Version 16+ with ES modules support
 - **Authentication**: API token + email or username + app password
 
-## Quick Start
+## Installation
 
-### 1. Install & Build
+### Option 1: Install from NPM (Recommended)
+```bash
+npm install -g @tugudush/bitbucket-mcp
+```
+
+### Option 2: Build from Source
 ```bash
 git clone <repository-url>
 cd bitbucket-mcp
 npm install
 npm run build
 ```
+
+## Quick Start
 
 ### 2. Authentication (Optional - for testing only)
 
@@ -41,6 +48,48 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 ### 3. Integration (Authentication included here)
 
 **For most users, this is where you actually configure authentication credentials.**
+
+#### Option A: Using NPM Global Installation (Recommended)
+
+After installing with `npm install -g @tugudush/bitbucket-mcp`:
+
+**VS Code GitHub Copilot**
+```json
+// .vscode/mcp.json
+{
+  "servers": {
+    "bitbucket-mcp": {
+      "type": "stdio",
+      "command": "bitbucket-mcp",
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop**
+```json
+// claude_desktop_config.json
+{
+  "mcpServers": {
+    "bitbucket": {
+      "command": "npx",
+      "args": ["@tugudush/bitbucket-mcp"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+#### Option B: Using Local Build (For Development)
+
+If you built from source:
 
 **VS Code GitHub Copilot**
 ```json
@@ -77,7 +126,10 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 }
 ```
 
-**💡 Tip**: Replace `/path/to/build/index.js` with the absolute path to your built server, and add your actual Bitbucket credentials to access private repositories.
+**💡 Tips**: 
+- **Option A (NPM)**: Much simpler setup, no paths to manage, automatic updates available
+- **Option B (Local)**: Replace `/path/to/build/index.js` with the absolute path to your built server
+- Add your actual Bitbucket credentials to access private repositories
 
 ## Features
 
