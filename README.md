@@ -241,6 +241,14 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 4. Add tests if applicable
 5. Submit a pull request
 
+## Support
+
+If you find this project helpful, please consider supporting its development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/tugudush)
+
+You can also run `npm fund` in your project to see funding information.
+
 ## Roadmap
 
 Future enhancements (all read-only):
