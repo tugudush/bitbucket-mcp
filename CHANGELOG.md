@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.8] - 2025-08-20
+
+### Fixed
+- **Repository browsing**: Reverted to commit SHA resolution for subdirectory browsing in `bb_browse_repository` tool
+  - Restored hybrid URL approach to properly handle complex branch names (e.g., `feature/SSP-1024`)
+  - Re-implemented commit SHA resolution logic for subdirectory access to avoid Bitbucket API URL parsing issues
+  - Root directory browsing continues to use `?at={ref}` pattern (works with all branch names)
+  - Subdirectory browsing now uses `/src/{commit_sha}/{path}/` pattern (resolves branch to commit SHA first)
+  - This fixes regression introduced in v1.4.6 where branches with forward slashes would fail on subdirectory access
+
 ## [1.4.7] - 2025-08-20
 
 ### Added
