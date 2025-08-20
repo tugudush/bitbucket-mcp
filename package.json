@@ -72,7 +72,9 @@
   },
   "files": [
     "build/**/*",
-    "!build/__tests__"
+    "!build/__tests__",
+    "CHANGELOG.md",
+    "README.md"
   ],
   "publishConfig": {
     "access": "public"
