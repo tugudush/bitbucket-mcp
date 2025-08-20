@@ -8,6 +8,13 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 - **Node.js**: Version 16+ with ES modules support
 - **Authentication**: API token + email or username + app password
 
+> 💡 **How to create an API Token:**
+> 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+> 2. Click "Create API token"
+> 3. Enter a label (e.g., "Bitbucket MCP Server")
+> 4. Copy the generated token and use it as `BITBUCKET_API_TOKEN`
+> 5. Use your Atlassian account email as `BITBUCKET_EMAIL`
+
 ## Installation
 
 ### Option 1: Install from NPM (Recommended)
@@ -36,13 +43,6 @@ For manual server testing, choose one authentication method:
 export BITBUCKET_API_TOKEN="your-api-token"
 export BITBUCKET_EMAIL="your-atlassian-email"
 ```
-
-> 💡 **How to create an API Token:**
-> 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
-> 2. Click "Create API token"
-> 3. Enter a label (e.g., "Bitbucket MCP Server")
-> 4. Copy the generated token and use it as `BITBUCKET_API_TOKEN`
-> 5. Use your Atlassian account email as `BITBUCKET_EMAIL`
 
 **App Passwords (Legacy - deprecated Sept 9, 2025)**
 ```bash
