@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.7] - 2025-08-20
+
+### Added
+- **Changelog integration**: Added comprehensive changelog management and distribution
+  - Created CHANGELOG.md following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
+  - Added changelog to npm package files for distribution with published packages
+  - Added `release` script for automated build, publish, and git operations
+  - Integrated changelog with GitHub releases workflow
+
+### Changed
+- **Package distribution**: Updated `files` array in package.json to include CHANGELOG.md and README.md
+- **Release workflow**: Enhanced npm scripts with automated release command
+
 ## [1.4.6] - 2025-08-20
 
 ### Changed
