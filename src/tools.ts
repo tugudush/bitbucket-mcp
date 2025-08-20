@@ -667,43 +667,18 @@ export async function handleToolCall(request: CallToolRequest): Promise<{
         let url: string;
 
         if (path) {
-          // For subdirectories, we need to get the commit SHA first
-          // because the /src/{ref}/{path} pattern doesn't work with branch names containing slashes
-          try {
-            const branchUrl = buildApiUrl(
-              `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches/${encodeURIComponent(ref)}`
-            );
-            const branchData = await makeRequest<{ target: { hash: string } }>(
-              branchUrl
-            );
-            const commitSha = branchData.target.hash;
-
-            // Use /src/{commit_sha}/{path} pattern for subdirectories
-            const encodedPath = path
-              .split('/')
-              .map(segment => encodeURIComponent(segment))
-              .join('/');
-            url = buildApiUrl(
-              `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${commitSha}/${encodedPath}`
-            );
-            // Ensure trailing slash for directory browsing
-            if (!url.endsWith('/')) {
-              url += '/';
-            }
-          } catch {
-            // If we can't get the commit SHA, fall back to trying the branch name directly
-            const encodedRef = encodeURIComponent(ref);
-            const encodedPath = path
-              .split('/')
-              .map(segment => encodeURIComponent(segment))
-              .join('/');
-            url = buildApiUrl(
-              `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedPath}`
-            );
-            // Ensure trailing slash for directory browsing
-            if (!url.endsWith('/')) {
-              url += '/';
-            }
+          // For subdirectories, use the /src/{ref}/{path}/ pattern (same as file content)
+          const encodedRef = encodeURIComponent(ref);
+          const encodedPath = path
+            .split('/')
+            .map(segment => encodeURIComponent(segment))
+            .join('/');
+          url = buildApiUrl(
+            `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedPath}`
+          );
+          // Ensure trailing slash for directory browsing
+          if (!url.endsWith('/')) {
+            url += '/';
           }
         } else {
           // For root directory, use /src?at={ref} pattern (works with branch names)
