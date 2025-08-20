@@ -8,15 +8,29 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 - **Node.js**: Version 16+ with ES modules support
 - **Authentication**: API token + email or username + app password
 
-## Quick Start
+> 💡 **How to create an API Token:**
+> 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+> 2. Click "Create API token"
+> 3. Enter a label (e.g., "Bitbucket MCP Server")
+> 4. Copy the generated token and use it as `BITBUCKET_API_TOKEN`
+> 5. Use your Atlassian account email as `BITBUCKET_EMAIL`
 
-### 1. Install & Build
+## Installation
+
+### Option 1: Install from NPM (Recommended)
 ```bash
-git clone <repository-url>
+npm install -g @tugudush/bitbucket-mcp
+```
+
+### Option 2: Build from Source
+```bash
+git clone https://github.com/tugudush/bitbucket-mcp.git
 cd bitbucket-mcp
 npm install
 npm run build
 ```
+
+## Quick Start
 
 ### 2. Authentication (Optional - for testing only)
 
@@ -41,6 +55,48 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 ### 3. Integration (Authentication included here)
 
 **For most users, this is where you actually configure authentication credentials.**
+
+#### Option A: Using NPM Global Installation (Recommended)
+
+After installing with `npm install -g @tugudush/bitbucket-mcp`:
+
+**VS Code GitHub Copilot**
+```json
+// .vscode/mcp.json
+{
+  "servers": {
+    "bitbucket-mcp": {
+      "type": "stdio",
+      "command": "bitbucket-mcp",
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop**
+```json
+// claude_desktop_config.json
+{
+  "mcpServers": {
+    "bitbucket": {
+      "command": "npx",
+      "args": ["@tugudush/bitbucket-mcp"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+#### Option B: Using Local Build (For Development)
+
+If you built from source:
 
 **VS Code GitHub Copilot**
 ```json
@@ -77,7 +133,10 @@ export BITBUCKET_APP_PASSWORD="your-app-password"
 }
 ```
 
-**💡 Tip**: Replace `/path/to/build/index.js` with the absolute path to your built server, and add your actual Bitbucket credentials to access private repositories.
+**💡 Tips**: 
+- **Option A (NPM)**: Much simpler setup, no paths to manage, automatic updates available
+- **Option B (Local)**: Replace `/path/to/build/index.js` with the absolute path to your built server
+- Add your actual Bitbucket credentials to access private repositories
 
 ## Features
 
@@ -154,15 +213,9 @@ node build/index.js  # Test server
 - ⚠️ **Code search**: Requires enablement in Bitbucket account settings
 - ⚠️ **File size limits**: Large files may be truncated
 
-## Development Status & Related Projects
+## Development Status
 
 🚧 **This project is under active development** and may contain incomplete features or breaking changes. We welcome contributions and feedback!
-
-**Related MCP Servers for Reference:**
-- [bitbucket-server-mcp-server](https://github.com/garc33/bitbucket-server-mcp-server) - MCP server for Bitbucket Server (on-premises)
-- [mcp-server-atlassian-bitbucket](https://github.com/aashari/mcp-server-atlassian-bitbucket) - Alternative Atlassian Bitbucket MCP implementation
-
-These repositories provide excellent reference implementations and inspiration for Bitbucket API integration patterns.
 
 ## API Coverage
 
@@ -188,6 +241,43 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 3. Make your changes (maintaining read-only nature)
 4. Add tests if applicable
 5. Submit a pull request
+
+## Support
+
+If you find this project helpful, please consider supporting its development:
+
+### Traditional Sponsorship
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/tugudush)
+
+### Crypto Donations
+
+Support this project with cryptocurrency:
+
+**Bitcoin (BTC)**
+```
+17v2iVCXoxrKMdnUTEqETGfjxUXNnhyE2k
+```
+
+**Ethereum (ETH)**
+```
+0xc924d430473bfec6d51e3aac5f4dd9adbe77e84e
+```
+
+**Ripple (XRP)**
+```
+Address:
+rpWJmMcPM4ynNfvhaZFYmPhBq5FYfDJBZu
+
+Destination Tag:
+1135041300
+```
+
+**Solana (SOL)**
+```
+89pm44ME76HxrCXtWxotjvkoXHNYFAfkzP8GS88pg7Fg
+```
+
+You can also run `npm fund` in your project to see all funding information.
 
 ## Roadmap
 

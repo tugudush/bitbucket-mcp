@@ -1,11 +1,11 @@
 {
-  "name": "bitbucket-mcp-server",
-  "version": "1.0.0",
+  "name": "@tugudush/bitbucket-mcp",
+  "version": "1.4.5",
   "description": "A Model Context Protocol server for Bitbucket with read-only operations",
   "type": "module",
   "main": "build/index.js",
   "bin": {
-    "bitbucket-mcp-server": "./build/index.js"
+    "bitbucket-mcp": "build/index.js"
   },
   "scripts": {
     "build": "tsc && chmod +x build/index.js",
@@ -28,8 +28,26 @@
     "ai",
     "llm"
   ],
-  "author": "Your Name",
+  "author": "tugudush",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tugudush/bitbucket-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tugudush/bitbucket-mcp/issues"
+  },
+  "homepage": "https://github.com/tugudush/bitbucket-mcp#readme",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/tugudush"
+    },
+    {
+      "type": "custom",
+      "url": "https://github.com/tugudush/bitbucket-mcp#crypto-donations"
+    }
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.22.0",
@@ -53,6 +71,10 @@
     "inflight": "npm:@npmcli/inflight@^1.0.1"
   },
   "files": [
-    "build"
-  ]
+    "build/**/*",
+    "!build/__tests__"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
