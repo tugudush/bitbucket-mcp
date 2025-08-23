@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.11] - 2025-08-23
+
+### Added
+- **Changelog maintenance**: Enhanced changelog management and documentation practices 😄
+  - Updated CHANGELOG.md with comprehensive version history and detailed release notes
+  - Emphasized the importance of keeping changelog current with each release
+  - Added systematic approach to documenting changes, fixes, and new features
+  - Demonstrated commitment to transparency and project documentation standards
+  - Because good changelogs make developers (and users) happy! 📝
+
+## [1.4.10] - 2025-08-23
+
+### Changed
+- **Publishing automation**: Updated GitHub release commands to automatically use the latest git tag
+  - Modified `gh release create` commands in PUBLISHING.md to use `$(git describe --tags --abbrev=0)` 
+  - Eliminates need to manually specify version numbers when creating releases
+  - Streamlines publishing workflow by automatically detecting the version created by `npm version`
+  - Updated all examples and documentation to use the automated approach
+
+## [1.4.9] - 2025-08-23
+
+### Added
+- **Publishing guide**: Created comprehensive, beginner-friendly publishing documentation
+  - Simplified PUBLISHING.md with clear step-by-step instructions
+  - Added git tags and GitHub releases workflow integration
+  - Included troubleshooting section and package.json configuration examples
+  - Added support for pre-release versions and automated publishing workflow
+
 ## [1.4.8] - 2025-08-20
 
 ### Fixed
