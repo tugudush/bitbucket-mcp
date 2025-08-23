@@ -18,8 +18,7 @@
     "format": "prettier --write src/**/*.ts",
     "lf": "npm run lint && npm run format",
     "ltf": "npm run lint && npm run format && npm run typecheck",
-    "ltfb": "npm run lint && npm run typecheck && npm run format && npm run build",
-    "release": "npm run ltfb && npm publish && git push && git push --tags"
+    "ltfb": "npm run lint && npm run typecheck && npm run format && npm run build"
   },
   "keywords": [
     "mcp",
