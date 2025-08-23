@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.12] - 2025-08-23
+
+### Removed
+- **Build scripts**: Removed `release` script from package.json
+  - Eliminated `npm run release` command from available npm scripts
+  - Simplified package.json by removing automated release workflow script
+
 ## [1.4.11] - 2025-08-23
 
 ### Added
