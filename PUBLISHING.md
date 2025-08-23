@@ -41,11 +41,11 @@ npm publish
 # Push the tag created by npm version
 git push --tags
 
-# Create GitHub release using the GitHub CLI
-gh release create v1.0.1 --generate-notes
+# Create GitHub release using the latest tag automatically
+gh release create $(git describe --tags --abbrev=0) --generate-notes
 
 # Or create release with custom notes
-gh release create v1.0.1 --notes "Bug fixes and improvements"
+gh release create $(git describe --tags --abbrev=0) --notes "Bug fixes and improvements"
 ```
 
 ## Understanding Git Tags
@@ -75,8 +75,8 @@ git push origin :refs/tags/v1.0.1
 ```bash
 # Install GitHub CLI first: https://cli.github.com/
 
-# Create release from latest tag
-gh release create v1.0.1 --generate-notes
+# Create release from latest tag automatically
+gh release create $(git describe --tags --abbrev=0) --generate-notes
 
 # Create release with custom description
 gh release create v1.0.1 --title "Version 1.0.1" --notes "
@@ -119,7 +119,7 @@ npm publish           # Publishes to NPM
 
 # 5. Create GitHub release
 git push --tags       # Push the tag
-gh release create v1.1.0 --generate-notes
+gh release create $(git describe --tags --abbrev=0) --generate-notes
 
 # 6. Verify everything worked
 npm view bitbucket-mcp
@@ -193,6 +193,6 @@ Make sure your `package.json` has these key fields:
 1. **Test** your code (`npm run ltf && npm test`)
 2. **Version** your package (`npm version patch/minor/major`)
 3. **Publish** to NPM (`npm publish`)
-4. **Release** on GitHub (`gh release create v1.0.1 --generate-notes`)
+4. **Release** on GitHub (`gh release create $(git describe --tags --abbrev=0) --generate-notes`)
 
 That's it! Your package is now available on NPM and GitHub.
