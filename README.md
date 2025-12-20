@@ -1,12 +1,12 @@
 # Bitbucket MCP Server
 
-A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot and Claude Desktop.
+A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Desktop.
 
 ## Requirements
 
 - **Code Search**: Enable at https://bitbucket.org/search for `bb_search_code` functionality
 - **Node.js**: Version 16+ with ES modules support
-- **Authentication**: API token + email or username + app password
+- **Authentication**: API token + email
 
 > 💡 **How to create an API Token:**
 > 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
@@ -203,8 +203,7 @@ If you built from source:
 ## Development
 
 ```bash
-npm run ltf     # Lint + Typecheck + Format
-npm run build   # Compile TypeScript  
+npm run ltfb     # Lint + Typecheck + Format + Build
 npm run watch   # Development mode
 node build/index.js  # Test server
 ```
@@ -259,35 +258,14 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 
 If you find this project helpful, please consider supporting its development:
 
-### Traditional Sponsorship
+
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/tugudush)
 
-### Crypto Donations
 
-Support this project with cryptocurrency:
-
-**Bitcoin (BTC)**
-```
-17v2iVCXoxrKMdnUTEqETGfjxUXNnhyE2k
-```
-
-**Ethereum (ETH)**
-```
-0xc924d430473bfec6d51e3aac5f4dd9adbe77e84e
-```
-
-**Ripple (XRP)**
-```
-Address:
-rpWJmMcPM4ynNfvhaZFYmPhBq5FYfDJBZu
-
-Destination Tag:
-1135041300
-```
 
 **Solana (SOL)**
 ```
-89pm44ME76HxrCXtWxotjvkoXHNYFAfkzP8GS88pg7Fg
+CWZccD3Ny3XotFZtnkcyzP3hapmu3ExknN1PF4rEvP3u
 ```
 
 You can also run `npm fund` in your project to see all funding information.
