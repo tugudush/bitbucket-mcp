@@ -32,29 +32,9 @@ npm run build
 
 ## Quick Start
 
-### 2. Authentication (Optional - for testing only)
+### Integration
 
-**⚠️ Note**: This step is only needed for manual testing. If you're going directly to step 3 (Integration), you can skip this step as authentication is configured in the integration files.
-
-For manual server testing, choose one authentication method:
-
-**API Tokens (Recommended)**
-```bash
-export BITBUCKET_API_TOKEN="your-api-token"
-export BITBUCKET_EMAIL="your-atlassian-email"
-```
-
-**App Passwords (Legacy - deprecated Sept 9, 2025)**
-```bash
-export BITBUCKET_USERNAME="your-username"  
-export BITBUCKET_APP_PASSWORD="your-app-password"
-```
-
-**Without Authentication**: The server will work with public repositories only.
-
-### 3. Integration (Authentication included here)
-
-**For most users, this is where you actually configure authentication credentials.**
+Configure your MCP client with authentication credentials.
 
 #### Option A: Using NPM Global Installation (Recommended)
 
@@ -67,6 +47,22 @@ After installing with `npm install -g @tugudush/bitbucket-mcp`:
   "servers": {
     "bitbucket-mcp": {
       "type": "stdio",
+      "command": "bitbucket-mcp",
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Cursor**
+```json
+// ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)
+{
+  "mcpServers": {
+    "bitbucket-mcp": {
       "command": "bitbucket-mcp",
       "env": {
         "BITBUCKET_API_TOKEN": "your-token",
@@ -105,6 +101,23 @@ If you built from source:
   "servers": {
     "bitbucket-mcp": {
       "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/build/index.js"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Cursor**
+```json
+// ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)
+{
+  "mcpServers": {
+    "bitbucket-mcp": {
       "command": "node",
       "args": ["/path/to/build/index.js"],
       "env": {
