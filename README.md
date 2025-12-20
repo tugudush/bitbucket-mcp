@@ -57,6 +57,22 @@ After installing with `npm install -g @tugudush/bitbucket-mcp`:
 }
 ```
 
+**Cursor**
+```json
+// ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)
+{
+  "mcpServers": {
+    "bitbucket-mcp": {
+      "command": "bitbucket-mcp",
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
 **Claude Desktop**
 ```json
 // claude_desktop_config.json
@@ -85,6 +101,23 @@ If you built from source:
   "servers": {
     "bitbucket-mcp": {
       "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/build/index.js"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Cursor**
+```json
+// ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)
+{
+  "mcpServers": {
+    "bitbucket-mcp": {
       "command": "node",
       "args": ["/path/to/build/index.js"],
       "env": {
