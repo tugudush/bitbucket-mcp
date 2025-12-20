@@ -34,8 +34,6 @@ describe('Configuration Management', () => {
       // Clear relevant env vars
       delete process.env.BITBUCKET_API_TOKEN;
       delete process.env.BITBUCKET_EMAIL;
-      delete process.env.BITBUCKET_USERNAME;
-      delete process.env.BITBUCKET_APP_PASSWORD;
       delete process.env.BITBUCKET_API_BASE;
       delete process.env.BITBUCKET_REQUEST_TIMEOUT;
       delete process.env.BITBUCKET_DEBUG;
@@ -79,8 +77,6 @@ describe('Configuration Management', () => {
       const config = {
         BITBUCKET_API_TOKEN: 'test-token',
         BITBUCKET_EMAIL: 'test@example.com',
-        BITBUCKET_USERNAME: undefined,
-        BITBUCKET_APP_PASSWORD: undefined,
         BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
         BITBUCKET_REQUEST_TIMEOUT: 30000,
         BITBUCKET_DEBUG: false,
@@ -93,30 +89,10 @@ describe('Configuration Management', () => {
       expect(auth.warning).toBeUndefined();
     });
 
-    it('should detect app password authentication with warning', () => {
-      const config = {
-        BITBUCKET_API_TOKEN: undefined,
-        BITBUCKET_EMAIL: undefined,
-        BITBUCKET_USERNAME: 'testuser',
-        BITBUCKET_APP_PASSWORD: 'test-password',
-        BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
-        BITBUCKET_REQUEST_TIMEOUT: 30000,
-        BITBUCKET_DEBUG: false,
-      };
-
-      const auth = validateAuthentication(config);
-
-      expect(auth.method).toBe('app-password');
-      expect(auth.isValid).toBe(true);
-      expect(auth.warning).toContain('deprecated');
-    });
-
     it('should detect no authentication', () => {
       const config = {
         BITBUCKET_API_TOKEN: undefined,
         BITBUCKET_EMAIL: undefined,
-        BITBUCKET_USERNAME: undefined,
-        BITBUCKET_APP_PASSWORD: undefined,
         BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
         BITBUCKET_REQUEST_TIMEOUT: 30000,
         BITBUCKET_DEBUG: false,
@@ -127,22 +103,6 @@ describe('Configuration Management', () => {
       expect(auth.method).toBe('none');
       expect(auth.isValid).toBe(false);
       expect(auth.warning).toContain('public repositories');
-    });
-
-    it('should prefer API token over app password', () => {
-      const config = {
-        BITBUCKET_API_TOKEN: 'test-token',
-        BITBUCKET_EMAIL: 'test@example.com',
-        BITBUCKET_USERNAME: 'testuser',
-        BITBUCKET_APP_PASSWORD: 'test-password',
-        BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
-        BITBUCKET_REQUEST_TIMEOUT: 30000,
-        BITBUCKET_DEBUG: false,
-      };
-
-      const auth = validateAuthentication(config);
-
-      expect(auth.method).toBe('api-token');
     });
   });
 
@@ -183,8 +143,6 @@ describe('Configuration Management', () => {
     it('should log warning for no authentication', () => {
       delete process.env.BITBUCKET_API_TOKEN;
       delete process.env.BITBUCKET_EMAIL;
-      delete process.env.BITBUCKET_USERNAME;
-      delete process.env.BITBUCKET_APP_PASSWORD;
 
       initializeConfig();
 

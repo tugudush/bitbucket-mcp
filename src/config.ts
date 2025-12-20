@@ -6,11 +6,9 @@ import { z } from 'zod';
 
 // Configuration schema with validation
 const ConfigSchema = z.object({
-  // Authentication (prioritized order)
+  // Authentication
   BITBUCKET_API_TOKEN: z.string().optional(),
   BITBUCKET_EMAIL: z.string().email().optional(),
-  BITBUCKET_USERNAME: z.string().optional(),
-  BITBUCKET_APP_PASSWORD: z.string().optional(),
 
   // API Configuration
   BITBUCKET_API_BASE: z.string().url().default('https://api.bitbucket.org/2.0'),
@@ -41,7 +39,7 @@ export function loadConfig(): Config {
 }
 
 export interface AuthMethod {
-  method: 'api-token' | 'app-password' | 'none';
+  method: 'api-token' | 'none';
   isValid: boolean;
   warning?: string;
 }
@@ -49,15 +47,6 @@ export interface AuthMethod {
 export function validateAuthentication(config: Config): AuthMethod {
   if (config.BITBUCKET_API_TOKEN && config.BITBUCKET_EMAIL) {
     return { method: 'api-token', isValid: true };
-  }
-
-  if (config.BITBUCKET_USERNAME && config.BITBUCKET_APP_PASSWORD) {
-    return {
-      method: 'app-password',
-      isValid: true,
-      warning:
-        'App Passwords are deprecated (Sept 9, 2025). Consider migrating to API tokens.',
-    };
   }
 
   return {
@@ -96,14 +85,6 @@ export function initializeConfig(): { config: Config; auth: AuthMethod } {
         : 'NOT SET'
     );
     console.error('  BITBUCKET_EMAIL:', config.BITBUCKET_EMAIL || 'NOT SET');
-    console.error(
-      '  BITBUCKET_USERNAME:',
-      config.BITBUCKET_USERNAME || 'NOT SET'
-    );
-    console.error(
-      '  BITBUCKET_APP_PASSWORD:',
-      config.BITBUCKET_APP_PASSWORD ? 'SET' : 'NOT SET'
-    );
   }
 
   return { config, auth };

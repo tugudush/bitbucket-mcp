@@ -30,91 +30,57 @@ This guide provides instructions for setting up, building, and manually testing 
   npm run watch
   ```
 
-## Manual Testing
+## Testing
 
-The server communicates via `stdio` using the Model Context Protocol (JSON-RPC 2.0). You can test it manually by piping JSON requests to the executable.
-
-### 1. Basic Connection Test (List Tools)
-
-Create a file named `request_list_tools.json`:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/list",
-  "params": {}
-}
-```
-
-Run the server with this input:
-
-**Mac/Linux:**
+### Automated Tests (Jest)
+Run the unit test suite:
 ```bash
-cat request_list_tools.json | node build/index.js
+npm test
 ```
 
-**Windows (PowerShell):**
-```powershell
-Get-Content request_list_tools.json | node build/index.js
-```
+### Integration Tests (Live API)
+The `test_all_tools.js` script verifies all tools against the live Bitbucket API. It automatically loads credentials from `.vscode/mcp.json` if present.
 
-**Windows (Command Prompt):**
-```cmd
-type request_list_tools.json | node build/index.js
-```
-
-### 2. Testing Specific Tools
-
-To test a tool like `bb_list_workspaces`, create `request_call_tool.json`:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "bb_list_workspaces",
-    "arguments": {}
-  }
-}
-```
-
-Run it similarly:
 ```bash
-cat request_call_tool.json | node build/index.js
+node test_all_tools
 ```
 
-### 3. Authentication
+### Manual JSON-RPC Testing
+You can test manually by piping JSON requests to the executable.
 
-To test with authentication, set the environment variables before running the command.
+1. **Create a request file** (e.g., `request.json`):
+   ```json
+   {
+     "jsonrpc": "2.0",
+     "id": 1,
+     "method": "tools/list",
+     "params": {}
+   }
+   ```
 
-**Mac/Linux:**
-```bash
-export BITBUCKET_API_TOKEN="your-token"
-export BITBUCKET_EMAIL="your-email"
-cat request_call_tool.json | node build/index.js
-```
+2. **Run the server**:
+   ```bash
+   # Windows (Git Bash)
+   cat request.json | node.exe build
 
-**Windows (PowerShell):**
-```powershell
-$env:BITBUCKET_API_TOKEN="your-token"
-$env:BITBUCKET_EMAIL="your-email"
-Get-Content request_call_tool.json | node build/index.js
-```
+   # Mac/Linux
+   cat request.json | node build
+   ```
+
+   *Note: Set `BITBUCKET_API_TOKEN` and `BITBUCKET_EMAIL` environment variables for authenticated requests.*
+
+   **Example (Windows Git Bash):**
+   ```bash
+   export BITBUCKET_API_TOKEN="your-token"
+   export BITBUCKET_EMAIL="your-email"
+   cat request.json | node.exe build/index.js
+   ```
 
 ## Debugging
 
-Enable debug logging to see detailed information about the server's internal state and environment variables. Debug logs are printed to `stderr` so they don't interfere with the JSON-RPC output on `stdout`.
+Enable debug logging to see internal state (printed to stderr):
 
 ```bash
 BITBUCKET_DEBUG=true node build/index.js
 ```
 
-## Running Tests
-
-Run the automated test suite (Jest):
-
-```bash
-npm test
-```
