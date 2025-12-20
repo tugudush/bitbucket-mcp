@@ -15,7 +15,7 @@ import { getToolDefinitions, handleToolCall } from './tools.js';
  */
 
 // Package version - kept in sync with package.json
-export const VERSION = '1.4.13';
+export const VERSION = '1.5.0';
 
 // Initialize configuration
 initializeConfig();
