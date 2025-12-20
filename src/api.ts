@@ -28,15 +28,9 @@ export function buildAuthHeaders(config?: Config): Record<string, string> {
   const headers: Record<string, string> = {};
 
   if (cfg.BITBUCKET_API_TOKEN && cfg.BITBUCKET_EMAIL) {
-    // Use API Token with Basic authentication (recommended)
+    // Use API Token with Basic authentication
     const auth = Buffer.from(
       `${cfg.BITBUCKET_EMAIL}:${cfg.BITBUCKET_API_TOKEN}`
-    ).toString('base64');
-    headers.Authorization = `Basic ${auth}`;
-  } else if (cfg.BITBUCKET_USERNAME && cfg.BITBUCKET_APP_PASSWORD) {
-    // Fallback to App Password with Basic authentication (legacy)
-    const auth = Buffer.from(
-      `${cfg.BITBUCKET_USERNAME}:${cfg.BITBUCKET_APP_PASSWORD}`
     ).toString('base64');
     headers.Authorization = `Basic ${auth}`;
   }

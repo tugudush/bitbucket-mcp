@@ -114,8 +114,6 @@ describe('API Layer', () => {
       mockLoadConfig.mockReturnValue({
         BITBUCKET_API_TOKEN: 'test-token',
         BITBUCKET_EMAIL: 'test@example.com',
-        BITBUCKET_USERNAME: undefined,
-        BITBUCKET_APP_PASSWORD: undefined,
         BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
         BITBUCKET_REQUEST_TIMEOUT: 30000,
         BITBUCKET_DEBUG: false,
@@ -134,53 +132,10 @@ describe('API Layer', () => {
       expect(decoded).toBe('test@example.com:test-token');
     });
 
-    it('should return app password auth headers when configured', () => {
-      mockLoadConfig.mockReturnValue({
-        BITBUCKET_API_TOKEN: undefined,
-        BITBUCKET_EMAIL: undefined,
-        BITBUCKET_USERNAME: 'testuser',
-        BITBUCKET_APP_PASSWORD: 'app-password',
-        BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
-        BITBUCKET_REQUEST_TIMEOUT: 30000,
-        BITBUCKET_DEBUG: false,
-      });
-
-      const headers = buildAuthHeaders();
-
-      expect(headers.Authorization).toBeDefined();
-      const decoded = Buffer.from(
-        headers.Authorization.replace('Basic ', ''),
-        'base64'
-      ).toString();
-      expect(decoded).toBe('testuser:app-password');
-    });
-
-    it('should prefer API token over app password', () => {
-      mockLoadConfig.mockReturnValue({
-        BITBUCKET_API_TOKEN: 'test-token',
-        BITBUCKET_EMAIL: 'test@example.com',
-        BITBUCKET_USERNAME: 'testuser',
-        BITBUCKET_APP_PASSWORD: 'app-password',
-        BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
-        BITBUCKET_REQUEST_TIMEOUT: 30000,
-        BITBUCKET_DEBUG: false,
-      });
-
-      const headers = buildAuthHeaders();
-
-      const decoded = Buffer.from(
-        headers.Authorization.replace('Basic ', ''),
-        'base64'
-      ).toString();
-      expect(decoded).toBe('test@example.com:test-token');
-    });
-
     it('should return empty object when no auth configured', () => {
       mockLoadConfig.mockReturnValue({
         BITBUCKET_API_TOKEN: undefined,
         BITBUCKET_EMAIL: undefined,
-        BITBUCKET_USERNAME: undefined,
-        BITBUCKET_APP_PASSWORD: undefined,
         BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
         BITBUCKET_REQUEST_TIMEOUT: 30000,
         BITBUCKET_DEBUG: false,
@@ -197,8 +152,6 @@ describe('API Layer', () => {
       mockLoadConfig.mockReturnValue({
         BITBUCKET_API_TOKEN: 'test-token',
         BITBUCKET_EMAIL: 'test@example.com',
-        BITBUCKET_USERNAME: undefined,
-        BITBUCKET_APP_PASSWORD: undefined,
         BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
         BITBUCKET_REQUEST_TIMEOUT: 30000,
         BITBUCKET_DEBUG: false,

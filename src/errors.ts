@@ -22,7 +22,7 @@ export class AuthenticationError extends BitbucketApiError {
       401,
       'Unauthorized',
       details,
-      'Check your authentication credentials (BITBUCKET_API_TOKEN + BITBUCKET_EMAIL or BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD)'
+      'Check your authentication credentials (BITBUCKET_API_TOKEN + BITBUCKET_EMAIL)'
     );
     this.name = 'AuthenticationError';
   }

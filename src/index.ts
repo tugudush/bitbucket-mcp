@@ -51,7 +51,7 @@ async function runServer() {
   await server.connect(transport);
   console.error('Bitbucket MCP Server running on stdio');
   console.error(
-    'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
+    'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL for authenticated requests'
   );
 }
 
