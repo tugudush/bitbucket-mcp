@@ -20,7 +20,21 @@ npm run build      # compile TypeScript
 npm test           # run tests
 ```
 
-### 2. Create a Version
+### 2. Update Version Constants
+Before creating a new version, update the `VERSION` constant in both source files to match your new version:
+
+**Files to update:**
+- `src/index.ts` - Line 18: `export const VERSION = 'x.x.x';`
+- `src/api.ts` - Line 10: `export const VERSION = 'x.x.x';`
+
+```bash
+# Example: If bumping to 1.5.0, update both files:
+# export const VERSION = '1.5.0';
+```
+
+> **Note:** These VERSION constants are used for the User-Agent header and server identification. They must match the version in `package.json`.
+
+### 3. Create a Version
 Choose the right version type:
 - **Patch** (`1.0.1`) - Bug fixes
 - **Minor** (`1.1.0`) - New features
@@ -36,7 +50,7 @@ npm version patch   # or minor/major
 npm publish
 ```
 
-### 4. Create GitHub Release
+### 5. Create GitHub Release
 ```bash
 # Push the tag created by npm version
 git push --tags
@@ -113,15 +127,23 @@ npm test
 # 3. Check what will be published
 npm pack --dry-run
 
-# 4. Create version and publish
+# 4. Update VERSION constants in source files
+# Edit src/index.ts and src/api.ts to match your new version
+# Example: export const VERSION = '1.5.0';
+
+# 5. Commit version constant updates
+git add src/index.ts src/api.ts
+git commit -m "chore: bump version constants to 1.5.0"
+
+# 6. Create version and publish
 npm version minor      # Creates tag and commits
 npm publish           # Publishes to NPM
 
-# 5. Create GitHub release
+# 7. Create GitHub release
 git push --tags       # Push the tag
 gh release create $(git describe --tags --abbrev=0) --generate-notes
 
-# 6. Verify everything worked
+# 8. Verify everything worked
 npm view bitbucket-mcp
 gh release list
 ```
@@ -191,8 +213,9 @@ Make sure your `package.json` has these key fields:
 ## Summary
 
 1. **Test** your code (`npm run ltf && npm test`)
-2. **Version** your package (`npm version patch/minor/major`)
-3. **Publish** to NPM (`npm publish`)
-4. **Release** on GitHub (`gh release create $(git describe --tags --abbrev=0) --generate-notes`)
+2. **Update** VERSION constants in `src/index.ts` and `src/api.ts`
+3. **Version** your package (`npm version patch/minor/major`)
+4. **Publish** to NPM (`npm publish`)
+5. **Release** on GitHub (`gh release create $(git describe --tags --abbrev=0) --generate-notes`)
 
 That's it! Your package is now available on NPM and GitHub.
