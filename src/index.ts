@@ -14,6 +14,9 @@ import { getToolDefinitions, handleToolCall } from './tools.js';
  * A read-only Model Context Protocol server for Bitbucket API access
  */
 
+// Package version - kept in sync with package.json
+export const VERSION = '1.4.13';
+
 // Initialize configuration
 initializeConfig();
 
@@ -21,7 +24,7 @@ initializeConfig();
 const server = new Server(
   {
     name: 'bitbucket-mcp-server',
-    version: '1.0.0',
+    version: VERSION,
   },
   {
     capabilities: {
