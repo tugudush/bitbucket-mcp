@@ -7,6 +7,7 @@ import {
   GetPullRequestSchema,
   GetPullRequestCommentsSchema,
   GetPullRequestCommentSchema,
+  GetCommentThreadSchema,
   GetPullRequestActivitySchema,
 } from '../schemas.js';
 import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
@@ -152,6 +153,87 @@ export async function handleGetPullRequestComment(
 
   if (comment.deleted) {
     response += `\n\n[This comment has been deleted]`;
+  }
+
+  return createResponse(response);
+}
+
+/**
+ * Get a comment thread (root comment + all replies)
+ */
+export async function handleGetCommentThread(
+  args: unknown
+): Promise<ToolResponse> {
+  const parsed = GetCommentThreadSchema.parse(args);
+
+  // First, get the root comment
+  const rootUrl = buildApiUrl(
+    `/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/comments/${parsed.comment_id}`
+  );
+  const rootComment = await makeRequest<BitbucketComment>(rootUrl);
+
+  // Then get all comments to find replies
+  const allCommentsUrl = addQueryParams(
+    buildApiUrl(
+      `/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/comments`
+    ),
+    { pagelen: 100 }
+  );
+  const allComments =
+    await makeRequest<BitbucketApiResponse<BitbucketComment>>(allCommentsUrl);
+
+  // Build the thread by finding all replies (direct and nested)
+  const findReplies = (
+    parentId: number,
+    depth: number = 0
+  ): BitbucketComment[] => {
+    const directReplies = allComments.values.filter(
+      c => c.parent?.id === parentId
+    );
+    const allReplies: BitbucketComment[] = [];
+    for (const reply of directReplies) {
+      allReplies.push(reply);
+      // Recursively find nested replies
+      allReplies.push(...findReplies(reply.id, depth + 1));
+    }
+    return allReplies;
+  };
+
+  const replies = findReplies(parsed.comment_id);
+
+  // Format the root comment
+  const formatComment = (comment: BitbucketComment, indent: string = '') => {
+    let text =
+      `${indent}📝 Comment #${comment.id}\n` +
+      `${indent}Author: ${comment.user.display_name}\n` +
+      `${indent}Created: ${comment.created_on}\n`;
+
+    if (comment.inline) {
+      text += `${indent}File: ${comment.inline.path}`;
+      if (comment.inline.to) text += `, Line: ${comment.inline.to}`;
+      text += '\n';
+    }
+
+    text += `${indent}Content:\n${indent}${comment.content?.raw || 'No content'}\n`;
+
+    if (comment.deleted) {
+      text += `${indent}[This comment has been deleted]\n`;
+    }
+
+    return text;
+  };
+
+  let response = `Comment Thread for #${parsed.comment_id} on PR #${parsed.pull_request_id}:\n\n`;
+  response += `=== ROOT COMMENT ===\n`;
+  response += formatComment(rootComment);
+
+  if (replies.length > 0) {
+    response += `\n=== REPLIES (${replies.length}) ===\n`;
+    for (const reply of replies) {
+      response += `\n` + formatComment(reply, '  ');
+    }
+  } else {
+    response += `\nNo replies to this comment.`;
   }
 
   return createResponse(response);

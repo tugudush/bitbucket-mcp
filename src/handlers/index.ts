@@ -21,6 +21,7 @@ export {
   handleGetPullRequest,
   handleGetPullRequestComments,
   handleGetPullRequestComment,
+  handleGetCommentThread,
   handleGetPullRequestActivity,
 } from './pullrequest.js';
 
@@ -53,6 +54,7 @@ import {
   handleGetPullRequest,
   handleGetPullRequestComments,
   handleGetPullRequestComment,
+  handleGetCommentThread,
   handleGetPullRequestActivity,
 } from './pullrequest.js';
 import { handleGetIssues, handleGetIssue } from './issue.js';
@@ -82,6 +84,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
   bb_get_pull_request: handleGetPullRequest,
   bb_get_pull_request_comments: handleGetPullRequestComments,
   bb_get_pull_request_comment: handleGetPullRequestComment,
+  bb_get_comment_thread: handleGetCommentThread,
   bb_get_pull_request_activity: handleGetPullRequestActivity,
 
   // Issue tools

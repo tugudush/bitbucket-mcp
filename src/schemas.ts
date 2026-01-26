@@ -75,6 +75,17 @@ export const GetPullRequestCommentSchema = z.object({
   comment_id: z.number().describe('The comment ID'),
 });
 
+export const GetCommentThreadSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pull_request_id: z.number().describe('The pull request ID'),
+  comment_id: z
+    .number()
+    .describe(
+      'The root comment ID to get thread for (will include all replies)'
+    ),
+});
+
 export const GetPullRequestActivitySchema = z.object({
   workspace: z.string().describe('The workspace or username'),
   repo_slug: z.string().describe('The repository name'),
