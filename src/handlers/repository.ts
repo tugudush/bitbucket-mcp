@@ -28,6 +28,33 @@ import { BitbucketApiError } from '../errors.js';
 import { createResponse, ToolResponse } from './types.js';
 
 /**
+ * Resolve a git reference (branch, tag, or commit SHA) to a commit SHA.
+ * Uses the /commit/{revision} endpoint which handles all ref types uniformly.
+ *
+ * @param workspace - The Bitbucket workspace
+ * @param repo_slug - The repository slug
+ * @param ref - Branch name, tag name, or commit SHA
+ * @returns The resolved commit SHA, or null if resolution fails
+ */
+async function resolveRefToCommitSha(
+  workspace: string,
+  repo_slug: string,
+  ref: string
+): Promise<string | null> {
+  try {
+    // The /commit/{revision} endpoint resolves branches, tags, and commit SHAs uniformly
+    const commitUrl = buildApiUrl(
+      `/repositories/${workspace}/${repo_slug}/commit/${encodeURIComponent(ref)}`
+    );
+    const commitData = await makeRequest<{ hash: string }>(commitUrl);
+    return commitData.hash;
+  } catch {
+    // If resolution fails, return null to let caller handle fallback
+    return null;
+  }
+}
+
+/**
  * Get detailed information about a specific repository
  */
 export async function handleGetRepository(
@@ -177,42 +204,34 @@ export async function handleBrowseRepository(
 
   if (path) {
     // For subdirectories, we need to get the commit SHA first
-    // because the /src/{ref}/{path} pattern doesn't work with branch names containing slashes
-    try {
-      const branchUrl = buildApiUrl(
-        `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches/${encodeURIComponent(ref)}`
-      );
-      const branchData = await makeRequest<{ target: { hash: string } }>(
-        branchUrl
-      );
-      const commitSha = branchData.target.hash;
+    // because the /src/{ref}/{path} pattern doesn't work with refs containing slashes
+    // Use resolveRefToCommitSha which handles branches, tags, and commit SHAs uniformly
+    const commitSha = await resolveRefToCommitSha(
+      parsed.workspace,
+      parsed.repo_slug,
+      ref
+    );
 
+    const encodedPath = path
+      .split('/')
+      .map(segment => encodeURIComponent(segment))
+      .join('/');
+
+    if (commitSha) {
       // Use /src/{commit_sha}/{path} pattern for subdirectories
-      const encodedPath = path
-        .split('/')
-        .map(segment => encodeURIComponent(segment))
-        .join('/');
       url = buildApiUrl(
         `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${commitSha}/${encodedPath}`
       );
-      // Ensure trailing slash for directory browsing
-      if (!url.endsWith('/')) {
-        url += '/';
-      }
-    } catch {
-      // If we can't get the commit SHA, fall back to trying the branch name directly
+    } else {
+      // If resolution fails, fall back to trying the ref directly
       const encodedRef = encodeURIComponent(ref);
-      const encodedPath = path
-        .split('/')
-        .map(segment => encodeURIComponent(segment))
-        .join('/');
       url = buildApiUrl(
         `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedPath}`
       );
-      // Ensure trailing slash for directory browsing
-      if (!url.endsWith('/')) {
-        url += '/';
-      }
+    }
+    // Ensure trailing slash for directory browsing
+    if (!url.endsWith('/')) {
+      url += '/';
     }
   } else {
     // For root directory, use /src?at={ref} pattern (works with branch names)
@@ -286,33 +305,28 @@ export async function handleGetFileContent(
     }
   }
 
-  // Use the same robust approach as bb_browse_repository
-  // Get commit SHA first to handle branch names with slashes
-  let url: string;
-  try {
-    const branchUrl = buildApiUrl(
-      `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches/${encodeURIComponent(ref)}`
-    );
-    const branchData = await makeRequest<{ target: { hash: string } }>(
-      branchUrl
-    );
-    const commitSha = branchData.target.hash;
+  // Use resolveRefToCommitSha which handles branches, tags, and commit SHAs uniformly
+  // Get commit SHA first to handle refs with slashes (e.g., feature/branch or v1.0.158 tags)
+  const commitSha = await resolveRefToCommitSha(
+    parsed.workspace,
+    parsed.repo_slug,
+    ref
+  );
 
+  const encodedFilePath = parsed.file_path
+    .split('/')
+    .map(segment => encodeURIComponent(segment))
+    .join('/');
+
+  let url: string;
+  if (commitSha) {
     // Use /src/{commit_sha}/{file_path} pattern
-    const encodedFilePath = parsed.file_path
-      .split('/')
-      .map(segment => encodeURIComponent(segment))
-      .join('/');
     url = buildApiUrl(
       `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${commitSha}/${encodedFilePath}`
     );
-  } catch {
-    // If we can't get the commit SHA, fall back to trying the branch name directly
+  } else {
+    // If resolution fails, fall back to trying the ref directly
     const encodedRef = encodeURIComponent(ref);
-    const encodedFilePath = parsed.file_path
-      .split('/')
-      .map(segment => encodeURIComponent(segment))
-      .join('/');
     url = buildApiUrl(
       `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedFilePath}`
     );
