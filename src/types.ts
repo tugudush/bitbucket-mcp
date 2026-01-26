@@ -49,8 +49,10 @@ export interface BitbucketPullRequest {
 }
 
 export interface BitbucketComment {
+  id: number;
   user: BitbucketUser;
   created_on: string;
+  updated_on?: string;
   content?: {
     raw?: string;
     markup?: string;
@@ -63,6 +65,7 @@ export interface BitbucketComment {
   parent?: {
     id: number;
   };
+  deleted?: boolean;
 }
 
 export interface BitbucketActivity {

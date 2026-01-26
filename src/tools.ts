@@ -15,6 +15,7 @@ import {
   GetPullRequestsSchema,
   GetPullRequestSchema,
   GetPullRequestCommentsSchema,
+  GetPullRequestCommentSchema,
   GetPullRequestActivitySchema,
   GetIssuesSchema,
   GetIssueSchema,
@@ -71,6 +72,13 @@ export function getToolDefinitions(): Tool[] {
       description: 'Get comments for a specific pull request',
       inputSchema: zodToJsonSchema(
         GetPullRequestCommentsSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pull_request_comment',
+      description: 'Get a single comment by ID from a pull request',
+      inputSchema: zodToJsonSchema(
+        GetPullRequestCommentSchema
       ) as Tool['inputSchema'],
     },
     {

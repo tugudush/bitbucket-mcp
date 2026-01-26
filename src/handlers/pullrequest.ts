@@ -6,6 +6,7 @@ import {
   GetPullRequestsSchema,
   GetPullRequestSchema,
   GetPullRequestCommentsSchema,
+  GetPullRequestCommentSchema,
   GetPullRequestActivitySchema,
 } from '../schemas.js';
 import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
@@ -111,6 +112,49 @@ export async function handleGetPullRequestComments(
   return createResponse(
     `Comments for PR #${parsed.pull_request_id} (${data.size} total):\n\n${commentList}`
   );
+}
+
+/**
+ * Get a single comment by ID from a pull request
+ */
+export async function handleGetPullRequestComment(
+  args: unknown
+): Promise<ToolResponse> {
+  const parsed = GetPullRequestCommentSchema.parse(args);
+  const url = buildApiUrl(
+    `/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/comments/${parsed.comment_id}`
+  );
+  const comment = await makeRequest<BitbucketComment>(url);
+
+  let response =
+    `Comment #${comment.id} on PR #${parsed.pull_request_id}:\n\n` +
+    `Author: ${comment.user.display_name}\n` +
+    `Created: ${comment.created_on}\n`;
+
+  if (comment.updated_on && comment.updated_on !== comment.created_on) {
+    response += `Updated: ${comment.updated_on}\n`;
+  }
+
+  if (comment.inline) {
+    response += `\nInline Comment:\n`;
+    response += `  File: ${comment.inline.path}\n`;
+    if (comment.inline.to) response += `  Line: ${comment.inline.to}\n`;
+    if (comment.inline.from && comment.inline.from !== comment.inline.to) {
+      response += `  From Line: ${comment.inline.from}\n`;
+    }
+  }
+
+  if (comment.parent) {
+    response += `\nReply to Comment #${comment.parent.id}\n`;
+  }
+
+  response += `\nContent:\n${comment.content?.raw || 'No content'}`;
+
+  if (comment.deleted) {
+    response += `\n\n[This comment has been deleted]`;
+  }
+
+  return createResponse(response);
 }
 
 /**

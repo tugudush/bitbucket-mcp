@@ -68,6 +68,13 @@ export const GetPullRequestCommentsSchema = z.object({
     .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
+export const GetPullRequestCommentSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pull_request_id: z.number().describe('The pull request ID'),
+  comment_id: z.number().describe('The comment ID'),
+});
+
 export const GetPullRequestActivitySchema = z.object({
   workspace: z.string().describe('The workspace or username'),
   repo_slug: z.string().describe('The repository name'),
