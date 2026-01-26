@@ -1,12 +1,12 @@
 # Bitbucket MCP Server
 
-A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot and Claude Desktop.
+A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Desktop.
 
 ## Requirements
 
 - **Code Search**: Enable at https://bitbucket.org/search for `bb_search_code` functionality
 - **Node.js**: Version 16+ with ES modules support
-- **Authentication**: API token + email or username + app password
+- **Authentication**: API token + email
 
 > 💡 **How to create an API Token:**
 > 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
@@ -32,29 +32,9 @@ npm run build
 
 ## Quick Start
 
-### 2. Authentication (Optional - for testing only)
+### Integration
 
-**⚠️ Note**: This step is only needed for manual testing. If you're going directly to step 3 (Integration), you can skip this step as authentication is configured in the integration files.
-
-For manual server testing, choose one authentication method:
-
-**API Tokens (Recommended)**
-```bash
-export BITBUCKET_API_TOKEN="your-api-token"
-export BITBUCKET_EMAIL="your-atlassian-email"
-```
-
-**App Passwords (Legacy - deprecated Sept 9, 2025)**
-```bash
-export BITBUCKET_USERNAME="your-username"  
-export BITBUCKET_APP_PASSWORD="your-app-password"
-```
-
-**Without Authentication**: The server will work with public repositories only.
-
-### 3. Integration (Authentication included here)
-
-**For most users, this is where you actually configure authentication credentials.**
+Configure your MCP client with authentication credentials.
 
 #### Option A: Using NPM Global Installation (Recommended)
 
@@ -67,6 +47,22 @@ After installing with `npm install -g @tugudush/bitbucket-mcp`:
   "servers": {
     "bitbucket-mcp": {
       "type": "stdio",
+      "command": "bitbucket-mcp",
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Cursor**
+```json
+// ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)
+{
+  "mcpServers": {
+    "bitbucket-mcp": {
       "command": "bitbucket-mcp",
       "env": {
         "BITBUCKET_API_TOKEN": "your-token",
@@ -105,6 +101,23 @@ If you built from source:
   "servers": {
     "bitbucket-mcp": {
       "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/build/index.js"],
+      "env": {
+        "BITBUCKET_API_TOKEN": "your-token",
+        "BITBUCKET_EMAIL": "your@email.com"
+      }
+    }
+  }
+}
+```
+
+**Cursor**
+```json
+// ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project)
+{
+  "mcpServers": {
+    "bitbucket-mcp": {
       "command": "node",
       "args": ["/path/to/build/index.js"],
       "env": {
@@ -190,8 +203,7 @@ If you built from source:
 ## Development
 
 ```bash
-npm run ltf     # Lint + Typecheck + Format
-npm run build   # Compile TypeScript  
+npm run ltfb     # Lint + Typecheck + Format + Build
 npm run watch   # Development mode
 node build/index.js  # Test server
 ```
@@ -246,35 +258,14 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 
 If you find this project helpful, please consider supporting its development:
 
-### Traditional Sponsorship
+
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/tugudush)
 
-### Crypto Donations
 
-Support this project with cryptocurrency:
-
-**Bitcoin (BTC)**
-```
-17v2iVCXoxrKMdnUTEqETGfjxUXNnhyE2k
-```
-
-**Ethereum (ETH)**
-```
-0xc924d430473bfec6d51e3aac5f4dd9adbe77e84e
-```
-
-**Ripple (XRP)**
-```
-Address:
-rpWJmMcPM4ynNfvhaZFYmPhBq5FYfDJBZu
-
-Destination Tag:
-1135041300
-```
 
 **Solana (SOL)**
 ```
-89pm44ME76HxrCXtWxotjvkoXHNYFAfkzP8GS88pg7Fg
+CWZccD3Ny3XotFZtnkcyzP3hapmu3ExknN1PF4rEvP3u
 ```
 
 You can also run `npm fund` in your project to see all funding information.

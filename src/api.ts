@@ -1,10 +1,13 @@
-import { loadConfig } from './config.js';
+import { loadConfig, Config } from './config.js';
 import { createApiError } from './errors.js';
 import { API_CONSTANTS } from './schemas.js';
 
 /**
  * Bitbucket API configuration and request handling
  */
+
+// Package version - kept in sync with package.json
+export const VERSION = '1.5.1';
 
 // Get config dynamically to handle environment changes
 function getConfig() {
@@ -15,8 +18,62 @@ function getConfig() {
 export const BITBUCKET_API_BASE = 'https://api.bitbucket.org/2.0';
 
 /**
+ * Build authentication headers based on available credentials
+ * Priority: API Token (with email) > App Password (with username)
+ * @param config - Configuration object (optional, will load from env if not provided)
+ * @returns Headers object with Authorization if credentials available
+ */
+export function buildAuthHeaders(config?: Config): Record<string, string> {
+  const cfg = config || getConfig();
+  const headers: Record<string, string> = {};
+
+  if (cfg.BITBUCKET_API_TOKEN && cfg.BITBUCKET_EMAIL) {
+    // Use API Token with Basic authentication
+    const auth = Buffer.from(
+      `${cfg.BITBUCKET_EMAIL}:${cfg.BITBUCKET_API_TOKEN}`
+    ).toString('base64');
+    headers.Authorization = `Basic ${auth}`;
+  }
+
+  return headers;
+}
+
+/**
+ * Build standard request headers for Bitbucket API
+ * @param accept - Accept header value (default: 'application/json')
+ * @param config - Configuration object (optional)
+ * @returns Complete headers object
+ */
+export function buildRequestHeaders(
+  accept: string = 'application/json',
+  config?: Config
+): Record<string, string> {
+  return {
+    Accept: accept,
+    'User-Agent': `bitbucket-mcp-server/${VERSION}`,
+    ...buildAuthHeaders(config),
+  };
+}
+
+/**
+ * Check if an error is retryable (transient failures)
+ */
+function isRetryableError(status: number): boolean {
+  // Retry on server errors (5xx) and rate limiting (429)
+  return status >= 500 || status === 429;
+}
+
+/**
+ * Sleep for a specified duration
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
  * Helper function to make authenticated requests to Bitbucket API
  * Enforces read-only behavior by blocking non-GET requests
+ * Includes timeout and retry logic for improved reliability
  */
 export async function makeRequest<T = unknown>(
   url: string,
@@ -30,55 +87,95 @@ export async function makeRequest<T = unknown>(
     );
   }
 
+  const config = getConfig();
   const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'User-Agent': 'bitbucket-mcp-server/1.0.0',
+    ...buildRequestHeaders('application/json', config),
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  // Add authentication if available
-  // Priority: API Token (Basic auth with email) > App Password (Basic auth with username)
-  const config = getConfig();
-  const apiToken = config.BITBUCKET_API_TOKEN;
-  const email = config.BITBUCKET_EMAIL;
-  const username = config.BITBUCKET_USERNAME;
-  const appPassword = config.BITBUCKET_APP_PASSWORD;
+  const timeout = config.BITBUCKET_REQUEST_TIMEOUT;
+  let lastError: Error | null = null;
 
-  if (apiToken && email) {
-    // Use API Token with Basic authentication (recommended)
-    // Username should be your Atlassian email, password is the API token
-    const auth = Buffer.from(`${email}:${apiToken}`).toString('base64');
-    headers.Authorization = `Basic ${auth}`;
-  } else if (username && appPassword) {
-    // Fallback to App Password with Basic authentication (legacy)
-    const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
-    headers.Authorization = `Basic ${auth}`;
-  }
+  // Retry loop for transient failures
+  for (let attempt = 1; attempt <= API_CONSTANTS.RETRY_ATTEMPTS; attempt++) {
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  const response = await fetch(url, {
-    ...options,
-    // Force GET to prevent accidental method overrides downstream
-    method: 'GET',
-    headers,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    // Try to parse error details
-    let errorData;
     try {
-      errorData = JSON.parse(errorText);
-    } catch {
-      // If JSON parsing fails, use raw error text
-      errorData = { message: errorText };
-    }
+      const response = await fetch(url, {
+        ...options,
+        // Force GET to prevent accidental method overrides downstream
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
 
-    // Create and throw appropriate error type
-    throw createApiError(response.status, response.statusText, errorData, url);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        // Try to parse error details
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          // If JSON parsing fails, use raw error text
+          errorData = { message: errorText };
+        }
+
+        // Check if we should retry
+        if (
+          isRetryableError(response.status) &&
+          attempt < API_CONSTANTS.RETRY_ATTEMPTS
+        ) {
+          // Exponential backoff: 1s, 2s, 4s...
+          const backoffMs = Math.pow(2, attempt - 1) * 1000;
+          await sleep(backoffMs);
+          lastError = createApiError(
+            response.status,
+            response.statusText,
+            errorData,
+            url
+          );
+          continue;
+        }
+
+        // Create and throw appropriate error type
+        throw createApiError(
+          response.status,
+          response.statusText,
+          errorData,
+          url
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      // Handle abort/timeout errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        lastError = new Error(`Request timeout after ${timeout}ms: ${url}`);
+        if (attempt < API_CONSTANTS.RETRY_ATTEMPTS) {
+          const backoffMs = Math.pow(2, attempt - 1) * 1000;
+          await sleep(backoffMs);
+          continue;
+        }
+        throw lastError;
+      }
+
+      // Re-throw non-retryable errors
+      throw error;
+    }
   }
 
-  return await response.json();
+  // Should not reach here, but throw last error if we do
+  throw (
+    lastError ||
+    new Error(`Request failed after ${API_CONSTANTS.RETRY_ATTEMPTS} attempts`)
+  );
 }
 
 /**

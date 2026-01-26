@@ -8,7 +8,7 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 - **Zod schemas** - Input validation using `z.object()` with descriptive field documentation
 - **Tool registration** - Each tool uses `zodToJsonSchema()` for automatic schema generation  
 - **Tool implementations** - Switch-case pattern with typed `makeRequest<T>()` calls
-- **Authentication system** - Supports both API tokens (recommended) and App Passwords (legacy)
+- **Authentication system** - Supports API tokens
 - **Branch handling** - Uses `?at=branch` for listings and `/src/{ref}/{file}` for file content
 - **Read-only by design** - All operations are safe GET requests
 
@@ -20,7 +20,7 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 - **`src/errors.ts`** - Custom error classes with helpful suggestions
 
 ### Authentication & Security
-- **API Token Priority**: Prefers `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL` over legacy app passwords
+- **API Token Priority**: Uses `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL`
 - **Runtime Protection**: Blocks non-GET requests at the `makeRequest()` level
 - **Configuration Validation**: Type-safe environment variable parsing with error suggestions
 
@@ -45,11 +45,8 @@ npm run watch   # Development mode with auto-rebuild
 # Manual server test (should show startup message)
 node build/index.js
 
-# Test with API token authentication (recommended)
+# Test with API token authentication
 BITBUCKET_API_TOKEN=token BITBUCKET_EMAIL=email node build/index.js
-
-# Test with legacy App Password authentication  
-BITBUCKET_USERNAME=user BITBUCKET_APP_PASSWORD=pass node build/index.js
 ```
 
 ## Project-Specific Patterns
@@ -68,8 +65,6 @@ Environment-based with graceful fallback and type safety:
 const ConfigSchema = z.object({
   BITBUCKET_API_TOKEN: z.string().optional(),
   BITBUCKET_EMAIL: z.string().email().optional(),
-  BITBUCKET_USERNAME: z.string().optional(),
-  BITBUCKET_APP_PASSWORD: z.string().optional(),
   // ... other fields
 });
 
@@ -77,12 +72,9 @@ export function loadConfig(): Config {
   return ConfigSchema.parse(process.env);
 }
 
-// Authentication priority: API tokens over App Passwords
+// Authentication: API tokens
 if (apiToken && email) {
   const auth = Buffer.from(`${email}:${apiToken}`).toString('base64');
-  headers.Authorization = `Basic ${auth}`;
-} else if (username && appPassword) {
-  const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
   headers.Authorization = `Basic ${auth}`;
 }
 ```
@@ -186,12 +178,12 @@ See existing tools like `bb_browse_repository` as reference pattern for enhanced
 - Configuration in `.vscode/mcp.json` using stdio transport
 - Path formats: Windows supports both `C:\\path\\to\\build\\index.js` and `C:/path/to/build/index.js`
 - Use `${workspaceFolder}/build/index.js` for workspace-relative paths
-- **Auth**: Use `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL` (recommended) or legacy `BITBUCKET_USERNAME`+`BITBUCKET_APP_PASSWORD`
+- **Auth**: Use `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL`
 
 ### Claude Desktop Integration
 - Requires `claude_desktop_config.json` modification with `mcpServers` section
 - Environment variables passed via `env` object in configuration
-- **Migration Note**: App passwords deprecated Sept 9, 2025 - migrate to API tokens with email
+- **Note**: App passwords are deprecated - use API tokens with email
 
 ### Cross-Platform Considerations
 - **Windows**: JSON paths handle spaces automatically, no extra escaping needed
