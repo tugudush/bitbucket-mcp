@@ -162,7 +162,10 @@ If you built from source:
 
 **Pull Requests & Issues**
 - `bb_get_pull_requests`, `bb_get_pull_request` - Browse pull requests
-- `bb_get_pull_request_comments`, `bb_get_pull_request_activity` - Track reviews
+- `bb_get_pull_request_comments` - List all comments on a PR
+- `bb_get_pull_request_comment` - Get a single comment by ID
+- `bb_get_comment_thread` - Get a comment thread with all nested replies
+- `bb_get_pull_request_activity` - Track reviews, approvals, state changes
 - `bb_get_issues`, `bb_get_issue` - Monitor issues
 
 **Version Control**
@@ -197,6 +200,8 @@ If you built from source:
 **Pull Requests & Issues:**
 - "List repositories in myworkspace"
 - "Show open pull requests for myworkspace/myrepo"
+- "Get comment #744553155 from PR #408 in myworkspace/myrepo"
+- "Get the comment thread for comment #744553155 on PR #408"
 - "Get README.md from myworkspace/myrepo"
 - "Show recent commits on main branch of myworkspace/myrepo"
 
@@ -237,6 +242,8 @@ The server implements tools for the most commonly used Bitbucket API endpoints:
 - **Pull Requests API** (read-only operations)
   - Pull request details and listing
   - Pull request comments (inline and general)
+  - Single comment retrieval by ID
+  - Comment threads with nested replies
   - Pull request activity (reviews, approvals, state changes)
 - **Issues API** (read-only operations)
 - **Source API** (file content access)

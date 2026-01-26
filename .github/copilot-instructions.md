@@ -29,6 +29,8 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 - **`bb_browse_repository`** - Repository structure navigation
 - **`bb_get_file_content`** - Line-based pagination (1-10,000 lines)
 - **`bb_search_code`** - Code search with language filtering (requires account enablement)
+- **`bb_get_pull_request_comment`** - Get a single PR comment by ID
+- **`bb_get_comment_thread`** - Get comment thread with nested replies
 
 ## Critical Development Workflow
 
@@ -268,6 +270,8 @@ export async function makeRequest<T = unknown>(url: string, options: RequestInit
 - **File pagination**: Enhanced `bb_get_file_content` with line-based pagination
 - **Code search**: `bb_search_code` with language filtering and rich match highlighting
 - **Authentication fixes**: Lazy config loading resolves environment variable timing issues
+- **PR comment retrieval**: `bb_get_pull_request_comment` fetches single comment by ID
+- **Comment threads**: `bb_get_comment_thread` fetches root comment with all nested replies
 
 ### Branch Handling (Fixed 2025-08)
 - **Root directory listings**: Use `?at=branch` query parameter (works with all branch names)
@@ -319,6 +323,15 @@ bb_get_file_content --workspace myworkspace --repo_slug myrepo --file_path READM
 # Search for code (requires account-level enablement)
 bb_search_code --workspace myworkspace --repo_slug myrepo --search_query "function authentication"
 bb_search_code --workspace myworkspace --search_query "class extends"
+```
+
+### PR Comment Operations
+```bash
+# Get a single comment by ID
+bb_get_pull_request_comment --workspace myworkspace --repo_slug myrepo --pull_request_id 408 --comment_id 744553155
+
+# Get a comment thread with all nested replies
+bb_get_comment_thread --workspace myworkspace --repo_slug myrepo --pull_request_id 408 --comment_id 744553155
 ```
 
 ## Development Status & References
