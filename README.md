@@ -22,6 +22,11 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 npm install -g @tugudush/bitbucket-mcp
 ```
 
+**Updating to the latest version:**
+```bash
+npm update -g @tugudush/bitbucket-mcp
+```
+
 ### Option 2: Build from Source
 ```bash
 git clone https://github.com/tugudush/bitbucket-mcp.git
