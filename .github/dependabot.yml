@@ -8,8 +8,6 @@ updates:
     open-pull-requests-limit: 10
     assignees:
       - "tugudush"
-    labels:
-      - "dependencies"
     commit-message:
       prefix: "chore(deps):"
 
@@ -18,9 +16,6 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    labels:
-      - "dependencies"
-      - "github-actions"
     assignees:
       - "tugudush"
     commit-message:
