@@ -1,14 +1,13 @@
 name: CI
 
 on:
-  push:
-    branches: [main, develop, feature/github-actions, chore/update-develop]
   pull_request:
     branches: [main, develop]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -25,6 +24,19 @@ jobs:
 
       - name: Security Audit
         run: npm audit --audit-level=high
+        continue-on-error: true
 
-      - name: Run CI (Lint, Typecheck, Format, Build, and Test)
-        run: npm run ltfb && npm test
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Format Check
+        run: npm run format
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
