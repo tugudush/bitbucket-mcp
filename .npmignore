@@ -1,0 +1,45 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+
+# Test files (including built test files)
+__tests__/
+build/__tests__/
+*.test.*
+*.spec.*
+jest.config.*
+jest.setup.*
+tsconfig.*
+eslint.config.*
+
+# Build artifacts that shouldn't be published
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Development dependencies
+node_modules/
+coverage/
+.nyc_output/
+
+# Git files
+.git/
+.gitignore
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE files
+.idea/
+*.iml

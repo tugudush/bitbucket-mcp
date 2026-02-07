@@ -14,6 +14,9 @@ import { getToolDefinitions, handleToolCall } from './tools.js';
  * A read-only Model Context Protocol server for Bitbucket API access
  */
 
+// Package version - kept in sync with package.json
+export const VERSION = '3.0.0';
+
 // Initialize configuration
 initializeConfig();
 
@@ -21,7 +24,7 @@ initializeConfig();
 const server = new Server(
   {
     name: 'bitbucket-mcp-server',
-    version: '1.0.0',
+    version: VERSION,
   },
   {
     capabilities: {
@@ -48,7 +51,7 @@ async function runServer() {
   await server.connect(transport);
   console.error('Bitbucket MCP Server running on stdio');
   console.error(
-    'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL (recommended) or BITBUCKET_USERNAME+BITBUCKET_APP_PASSWORD for authenticated requests'
+    'Note: Set BITBUCKET_API_TOKEN+BITBUCKET_EMAIL for authenticated requests'
   );
 }
 

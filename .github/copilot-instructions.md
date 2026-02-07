@@ -7,28 +7,70 @@ This is a **Model Context Protocol (MCP)** server providing read-only access to 
 - **TypeScript interfaces** - Strict typing for all Bitbucket API responses
 - **Zod schemas** - Input validation using `z.object()` with descriptive field documentation
 - **Tool registration** - Each tool uses `zodToJsonSchema()` for automatic schema generation  
-- **Tool implementations** - Switch-case pattern with typed `makeRequest<T>()` calls
-- **Authentication system** - Supports both API tokens (recommended) and App Passwords (legacy)
+- **Handler registry pattern** - Modular domain-based handlers (replaces switch-case)
+- **Authentication system** - Supports API tokens
 - **Branch handling** - Uses `?at=branch` for listings and `/src/{ref}/{file}` for file content
 - **Read-only by design** - All operations are safe GET requests
 
-## Enhanced Features (2025 Update)
+## Enhanced Features (2025-2026 Update)
 
 ### Modular Architecture
-- **`src/index.ts`** - Main MCP server with tool implementations
+- **`src/index.ts`** - Main MCP server entry point
+- **`src/tools.ts`** - Tool definitions and handler registry routing
+- **`src/handlers/`** - Domain-specific tool handlers (repository, pullrequest, diff, etc.)
+- **`src/handlers/index.ts`** - Central handler registry export
+- **`src/handlers/types.ts`** - Shared handler interfaces
 - **`src/config.ts`** - Configuration management with Zod validation
 - **`src/errors.ts`** - Custom error classes with helpful suggestions
+- **`src/api.ts`** - API layer with retry logic and dual response types
+- **`src/types.ts`** - Comprehensive TypeScript interfaces
+- **`src/schemas.ts`** - Centralized Zod schemas and API constants
 
 ### Authentication & Security
-- **API Token Priority**: Prefers `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL` over legacy app passwords
+- **API Token Priority**: Uses `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL`
 - **Runtime Protection**: Blocks non-GET requests at the `makeRequest()` level
 - **Configuration Validation**: Type-safe environment variable parsing with error suggestions
 
-### Working Tools
+### Handler Registry Pattern (2025-2026)
+Replaced large switch statements with modular, domain-based handlers:
+```typescript
+// src/handlers/index.ts - Central registry
+export const toolHandlers: Record<string, ToolHandler> = {
+  bb_get_repository: handleGetRepository,
+  bb_list_repositories: handleListRepositories,
+  bb_get_pull_requests: handleGetPullRequests,
+  // ... 38 total tools organized by domain
+};
+
+// src/tools.ts - Clean lookup pattern
+export async function handleToolCall(request: CallToolRequest) {
+  const { name, arguments: args } = request.params;
+  const handler = toolHandlers[name];
+  return handler ? await handler(args) : errorResponse;
+}
+```
+
+**Domain Organization:**
+- `src/handlers/repository.ts` - Repository operations
+- `src/handlers/pullrequest.ts` - Pull request operations
+- `src/handlers/commit.ts` - Commit operations
+- `src/handlers/diff.ts` - Diff operations
+- `src/handlers/workspace.ts` - Workspace operations
+- `src/handlers/search.ts` - Search operations
+- `src/handlers/issue.ts` - Issue operations
+- `src/handlers/pipeline.ts` - Pipeline operations
+
+### Working Tools (38 total, 31 testable)
 - **`bb_list_workspaces`** - Workspace discovery and exploration
 - **`bb_browse_repository`** - Repository structure navigation
 - **`bb_get_file_content`** - Line-based pagination (1-10,000 lines)
 - **`bb_search_code`** - Code search with language filtering (requires account enablement)
+- **`bb_get_pull_request_comment`** - Get a single PR comment by ID
+- **`bb_get_comment_thread`** - Get comment thread with nested replies
+
+**Test Coverage:** 31 out of 38 tools verified (100% success on testable tools)
+- See `docs/TEST_RESULTS_PR_445.md` for comprehensive test results
+- Test suite: `test_pr_445.js`, `test_pr_445_advanced.js`, `test_pr_445_final.js`, `test_pr_408_comments.js`
 
 ## Critical Development Workflow
 
@@ -45,11 +87,8 @@ npm run watch   # Development mode with auto-rebuild
 # Manual server test (should show startup message)
 node build/index.js
 
-# Test with API token authentication (recommended)
+# Test with API token authentication
 BITBUCKET_API_TOKEN=token BITBUCKET_EMAIL=email node build/index.js
-
-# Test with legacy App Password authentication  
-BITBUCKET_USERNAME=user BITBUCKET_APP_PASSWORD=pass node build/index.js
 ```
 
 ## Project-Specific Patterns
@@ -68,8 +107,6 @@ Environment-based with graceful fallback and type safety:
 const ConfigSchema = z.object({
   BITBUCKET_API_TOKEN: z.string().optional(),
   BITBUCKET_EMAIL: z.string().email().optional(),
-  BITBUCKET_USERNAME: z.string().optional(),
-  BITBUCKET_APP_PASSWORD: z.string().optional(),
   // ... other fields
 });
 
@@ -77,12 +114,9 @@ export function loadConfig(): Config {
   return ConfigSchema.parse(process.env);
 }
 
-// Authentication priority: API tokens over App Passwords
+// Authentication: API tokens
 if (apiToken && email) {
   const auth = Buffer.from(`${email}:${apiToken}`).toString('base64');
-  headers.Authorization = `Basic ${auth}`;
-} else if (username && appPassword) {
-  const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
   headers.Authorization = `Basic ${auth}`;
 }
 ```
@@ -140,6 +174,24 @@ const data = await makeRequest<BitbucketApiResponse<BitbucketRepository>>(url);
 data.values.map((repo: BitbucketRepository) => ...)  // ✅ Type-safe
 ```
 
+### 8. Parameter Naming Conventions
+**Critical**: Use exact parameter names defined in Zod schemas:
+```typescript
+// ✅ Correct parameter names
+bb_get_commit({ commit: 'abc123' })        // NOT commit_hash
+bb_get_tag({ name: 'v1.0.0' })             // NOT tag_name
+bb_get_branch({ name: 'develop' })         // NOT branch_name
+bb_get_merge_base({ revspec: 'a..b' })    // NOT spec
+
+// Common mistakes found during testing:
+// ❌ commit_hash → ✅ commit
+// ❌ tag_name → ✅ name
+// ❌ branch_name → ✅ name
+// ❌ spec → ✅ revspec (for merge_base only)
+```
+
+**Reference**: Always check `src/schemas.ts` for exact parameter names before calling tools.
+
 ## Security & Limitations
 
 - **Read-only by design** - No POST/PUT/DELETE operations at any level
@@ -149,36 +201,146 @@ data.values.map((repo: BitbucketRepository) => ...)  // ✅ Type-safe
 - **File size limits** - Large files handled with pagination (up to 10,000 lines per request)
 - **Code search** - Requires account-level enablement in Bitbucket settings
 
-## Recent Improvements (2025-08)
+## Recent Improvements (2025-2026)
 
-### Removed Redundant Features
-- **BITBUCKET_READ_ONLY setting**: Removed as redundant (all operations are read-only by design)
-- **ReadOnlyModeError class**: Simplified to regular Error for non-GET protection
-- **Tool filtering logic**: Unnecessary since no write operations exist
+### Modular Architecture Refactoring (2026-02)
+- **Handler Registry Pattern**: Replaced 500+ line switch statements with modular handlers
+- **Domain Organization**: Tools organized by domain in `src/handlers/`
+- **Type Safety**: Shared `ToolHandler` and `ToolResponse` interfaces
+- **Maintainability**: Individual handler files easier to test and modify
 
-### Enhanced Configuration
+### Comprehensive Testing (2026-02)
+- **4 test scripts**: Progressive discovery, full coverage, comment verification
+- **31/33 tools verified**: 100% success on testable tools  
+- **Real-world validation**: Using actual production PRs (#445, #408)
+- **Dynamic ID extraction**: Pattern for extracting IDs from responses
+- **Documentation**: Complete test results in `docs/TEST_RESULTS_PR_445.md`
+
+### Enhanced Configuration (2025-08)
 - **Type-safe config**: Zod schema validation with helpful error messages
 - **Authentication detection**: Automatic method detection with deprecation warnings
 - **Enhanced logging**: Clear startup status with emojis (🔒 Mode, 🔐 Auth, ⚠️ Warnings)
+- **Lazy loading**: Fixed authentication timing issues with dynamic config loading
 
-### Improved Error Handling
+### Improved Error Handling (2025-08)
 - **Custom error classes**: Context-aware errors with helpful suggestions
 - **Resource-specific messages**: Better error context based on API URL patterns
 - **Graceful degradation**: Fallback authentication methods with warnings
 
+### Removed Redundant Features (2025-08)
+- **BITBUCKET_READ_ONLY setting**: Removed as redundant (all operations are read-only by design)
+- **ReadOnlyModeError class**: Simplified to regular Error for non-GET protection
+- **Tool filtering logic**: Unnecessary since no write operations exist
+
 ## Tool Development Guidelines
 
 When adding new tools:
-1. Create TypeScript interface for API response
-2. Define Zod schema with `.describe()` for each field
-3. Register tool with `bb_` prefix in `ListToolsRequestSchema` handler
-4. Implement in `CallToolRequestSchema` switch statement
-5. Use typed `makeRequest<YourInterface>()` calls
-6. Format response as readable text with consistent structure
-7. Add pagination support for large datasets using `API_CONSTANTS`
-8. Handle errors with `createApiError()` function
+1. Create TypeScript interface for API response in `src/types.ts`
+2. Define Zod schema with `.describe()` for each field in `src/schemas.ts`
+3. Create handler function in appropriate `src/handlers/*.ts` file
+4. Register handler in `toolHandlers` registry in `src/handlers/index.ts`
+5. Add tool definition in `getToolDefinitions()` in `src/tools.ts`
+6. Use typed `makeRequest<YourInterface>()` calls
+7. Format response as readable text with consistent structure
+8. Add pagination support for large datasets using `API_CONSTANTS`
+9. Handle errors with `createApiError()` function
 
-See existing tools like `bb_browse_repository` as reference pattern for enhanced features.
+**Example: Adding a new tool**
+```typescript
+// 1. Define interface in src/types.ts
+export interface BitbucketDeployment {
+  uuid: string;
+  environment: string;
+  state: string;
+}
+
+// 2. Define schema in src/schemas.ts
+export const GetDeploymentsSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pagelen: z.number().optional().describe(`Max ${API_CONSTANTS.MAX_PAGE_SIZE}`),
+});
+
+// 3. Create handler in src/handlers/repository.ts
+export async function handleGetDeployments(args: unknown): Promise<ToolResponse> {
+  const parsed = GetDeploymentsSchema.parse(args);
+  const url = buildApiUrl(`/repositories/${parsed.workspace}/${parsed.repo_slug}/deployments`);
+  const data = await makeRequest<BitbucketApiResponse<BitbucketDeployment>>(url);
+  // Format and return response...
+}
+
+// 4. Register in src/handlers/index.ts
+export const toolHandlers: Record<string, ToolHandler> = {
+  // ... existing tools
+  bb_get_deployments: handleGetDeployments,
+};
+
+// 5. Add definition in src/tools.ts
+export function getToolDefinitions(): Tool[] {
+  return [
+    // ... existing tools
+    {
+      name: 'bb_get_deployments',
+      description: 'Get deployments for a repository',
+      inputSchema: zodToJsonSchema(GetDeploymentsSchema) as Tool['inputSchema'],
+    },
+  ];
+}
+```
+
+See existing tools in `src/handlers/` for reference patterns.
+
+## Testing Patterns
+
+### Comprehensive Test Suite
+Four test scripts provide full coverage of MCP tools:
+
+**1. `test_all_tools.js` - Discovery-based testing**
+- Sequential discovery: workspaces → repos → PRs → issues
+- Dynamic ID extraction from response text
+- Credential loading from `.vscode/mcp.json`
+- Pattern: Extract and reuse IDs for dependent tests
+
+**2. `test_pr_445.js` - Full feature testing**
+- Tests all core tools across 8 categories
+- Uses real PR #445 from oceantg/otg-keycloak-ui
+- Validates workspace, repos, PRs, branches, commits, files
+
+**3. `test_pr_445_final.js` - Complete coverage**
+- Corrected parameter names (commit, name, revspec)
+- Multiple file content tests
+- Multiple branch comparisons
+- Multiple commit details
+
+**4. `test_pr_408_comments.js` - Comment thread verification**
+- Tests PR comment tools with nested replies
+- Validates inline comments with file location
+- Uses real comment #744553155
+
+### Testing Pattern Example
+```javascript
+// Load credentials from .vscode/mcp.json
+const mcpConfig = JSON.parse(fs.readFileSync(MCP_CONFIG_PATH, 'utf8'));
+env = { ...process.env, ...mcpConfig.servers['bitbucket-mcp'].env };
+
+// Run tool via MCP stdio protocol
+function runTool(name, args) {
+  const server = spawn(NODE_EXE, [SERVER_PATH], { env });
+  const request = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } };
+  server.stdin.write(JSON.stringify(request) + '\n');
+  // Parse JSON response from stdout
+}
+
+// Extract dynamic IDs from response text
+const match = result.content[0].text.match(/- #(\d+):/);
+const prId = match ? parseInt(match[1]) : null;
+```
+
+### Test Results
+- **31 out of 33 tools tested** (94% coverage)
+- **100% success rate** on testable tools
+- **2 tools not testable**: bb_get_issues, bb_get_issue (repo has no issue tracker)
+- See `docs/TEST_RESULTS_PR_445.md` for detailed results
 
 ## Integration Points & Configuration
 
@@ -186,12 +348,12 @@ See existing tools like `bb_browse_repository` as reference pattern for enhanced
 - Configuration in `.vscode/mcp.json` using stdio transport
 - Path formats: Windows supports both `C:\\path\\to\\build\\index.js` and `C:/path/to/build/index.js`
 - Use `${workspaceFolder}/build/index.js` for workspace-relative paths
-- **Auth**: Use `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL` (recommended) or legacy `BITBUCKET_USERNAME`+`BITBUCKET_APP_PASSWORD`
+- **Auth**: Use `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL`
 
 ### Claude Desktop Integration
 - Requires `claude_desktop_config.json` modification with `mcpServers` section
 - Environment variables passed via `env` object in configuration
-- **Migration Note**: App passwords deprecated Sept 9, 2025 - migrate to API tokens with email
+- **Note**: App passwords are deprecated - use API tokens with email
 
 ### Cross-Platform Considerations
 - **Windows**: JSON paths handle spaces automatically, no extra escaping needed
@@ -276,6 +438,8 @@ export async function makeRequest<T = unknown>(url: string, options: RequestInit
 - **File pagination**: Enhanced `bb_get_file_content` with line-based pagination
 - **Code search**: `bb_search_code` with language filtering and rich match highlighting
 - **Authentication fixes**: Lazy config loading resolves environment variable timing issues
+- **PR comment retrieval**: `bb_get_pull_request_comment` fetches single comment by ID
+- **Comment threads**: `bb_get_comment_thread` fetches root comment with all nested replies
 
 ### Branch Handling (Fixed 2025-08)
 - **Root directory listings**: Use `?at=branch` query parameter (works with all branch names)
@@ -327,6 +491,15 @@ bb_get_file_content --workspace myworkspace --repo_slug myrepo --file_path READM
 # Search for code (requires account-level enablement)
 bb_search_code --workspace myworkspace --repo_slug myrepo --search_query "function authentication"
 bb_search_code --workspace myworkspace --search_query "class extends"
+```
+
+### PR Comment Operations
+```bash
+# Get a single comment by ID
+bb_get_pull_request_comment --workspace myworkspace --repo_slug myrepo --pull_request_id 408 --comment_id 744553155
+
+# Get a comment thread with all nested replies
+bb_get_comment_thread --workspace myworkspace --repo_slug myrepo --pull_request_id 408 --comment_id 744553155
 ```
 
 ## Development Status & References
