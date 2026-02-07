@@ -9,13 +9,16 @@ import {
   GetFileContentSchema,
   GetBranchesSchema,
   GetCommitsSchema,
+  GetTagsSchema,
+  GetTagSchema,
+  GetBranchSchema,
   API_CONSTANTS,
 } from '../schemas.js';
 import {
   makeRequest,
+  makeTextRequest,
   buildApiUrl,
   addQueryParams,
-  buildRequestHeaders,
 } from '../api.js';
 import type {
   BitbucketApiResponse,
@@ -23,6 +26,8 @@ import type {
   BitbucketBranchWithTarget,
   BitbucketCommit,
   BitbucketSrcListingResponse,
+  BitbucketTag,
+  BitbucketBranchDetailed,
 } from '../types.js';
 import { BitbucketApiError } from '../errors.js';
 import { createResponse, ToolResponse } from './types.js';
@@ -332,17 +337,8 @@ export async function handleGetFileContent(
     );
   }
 
-  // Use a custom request for text content instead of makeRequest which expects JSON
-  // Use shared buildRequestHeaders utility for authentication
-  const headers = buildRequestHeaders('text/plain');
-
-  const response = await fetch(url, { headers });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-
-  const content = await response.text();
+  // Use makeTextRequest for text content — gains retry, timeout, and error enrichment
+  const content = await makeTextRequest(url);
 
   // Handle pagination
   const lines = content.split('\n');
@@ -360,5 +356,100 @@ export async function handleGetFileContent(
       paginatedLines
         .map((line, index) => `${start + index}: ${line}`)
         .join('\n')
+  );
+}
+
+/**
+ * List tags for a repository
+ */
+export async function handleGetTags(args: unknown): Promise<ToolResponse> {
+  const parsed = GetTagsSchema.parse(args);
+  const params = {
+    page: parsed.page,
+    pagelen: parsed.pagelen,
+  };
+  const url = addQueryParams(
+    buildApiUrl(
+      `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/tags`
+    ),
+    params
+  );
+  const data = await makeRequest<BitbucketApiResponse<BitbucketTag>>(url);
+
+  if (!data.values || data.values.length === 0) {
+    return createResponse(
+      `No tags found for ${parsed.workspace}/${parsed.repo_slug}.`
+    );
+  }
+
+  const tagList = data.values
+    .map(
+      (tag: BitbucketTag) =>
+        `- ${tag.name}\n` +
+        `  Commit: ${tag.target.hash.substring(0, 8)}\n` +
+        `  Date: ${tag.target.date}` +
+        (tag.message ? `\n  Message: ${tag.message}` : '')
+    )
+    .join('\n\n');
+
+  return createResponse(
+    `Tags for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${tagList}`
+  );
+}
+
+/**
+ * Get detailed information about a specific tag
+ */
+export async function handleGetTag(args: unknown): Promise<ToolResponse> {
+  const parsed = GetTagSchema.parse(args);
+  const url = buildApiUrl(
+    `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/tags/${encodeURIComponent(parsed.name)}`
+  );
+  const data = await makeRequest<BitbucketTag>(url);
+
+  const author = data.target.author
+    ? data.target.author.user?.display_name || data.target.author.raw
+    : 'Unknown';
+
+  return createResponse(
+    `Tag: ${data.name}\n` +
+      `Target commit: ${data.target.hash}\n` +
+      `Date: ${data.target.date}\n` +
+      `Author: ${author}\n` +
+      (data.target.message
+        ? `Commit message: ${data.target.message.trim()}\n`
+        : '') +
+      (data.message ? `Tag message: ${data.message.trim()}\n` : '')
+  );
+}
+
+/**
+ * Get detailed information about a specific branch
+ */
+export async function handleGetBranch(args: unknown): Promise<ToolResponse> {
+  const parsed = GetBranchSchema.parse(args);
+  const url = buildApiUrl(
+    `/repositories/${parsed.workspace}/${parsed.repo_slug}/refs/branches/${encodeURIComponent(parsed.name)}`
+  );
+  const data = await makeRequest<BitbucketBranchDetailed>(url);
+
+  const author = data.target.author
+    ? data.target.author.user?.display_name || data.target.author.raw
+    : 'Unknown';
+
+  return createResponse(
+    `Branch: ${data.name}\n` +
+      `Head commit: ${data.target.hash}\n` +
+      `Date: ${data.target.date}\n` +
+      `Author: ${author}\n` +
+      (data.target.message
+        ? `Last message: ${data.target.message.trim().split('\n')[0]}\n`
+        : '') +
+      (data.merge_strategies
+        ? `Merge strategies: ${data.merge_strategies.join(', ')}\n`
+        : '') +
+      (data.default_merge_strategy
+        ? `Default merge strategy: ${data.default_merge_strategy}\n`
+        : '')
   );
 }

@@ -294,6 +294,158 @@ export const GetDiffstatSchema = z.object({
     ),
 });
 
+// --- PR additional schemas ---
+
+export const GetPullRequestCommitsSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pull_request_id: z.number().describe('The pull request ID'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
+export const GetPullRequestStatusesSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pull_request_id: z.number().describe('The pull request ID'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
+// --- Commit schemas ---
+
+export const GetCommitSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  commit: z.string().describe('The commit hash, branch name, or tag'),
+});
+
+export const GetCommitStatusesSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  commit: z.string().describe('The commit hash'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
+export const GetMergeBaseSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  revspec: z
+    .string()
+    .describe(
+      'Two commit hashes or branch names separated by ".." (e.g. "main..feature-branch")'
+    ),
+});
+
+export const GetFileHistorySchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  commit: z
+    .string()
+    .describe('Commit hash, branch, or tag to start history from'),
+  path: z.string().describe('Path to the file in the repository'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
+// --- Ref schemas ---
+
+export const GetTagsSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
+export const GetTagSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  name: z.string().describe('The tag name'),
+});
+
+export const GetBranchSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  name: z.string().describe('The branch name'),
+});
+
+// --- Pipeline schemas ---
+
+export const ListPipelinesSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
+export const GetPipelineSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pipeline_uuid: z
+    .string()
+    .describe('The pipeline UUID (with or without curly braces)'),
+});
+
+export const GetPipelineStepsSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pipeline_uuid: z
+    .string()
+    .describe('The pipeline UUID (with or without curly braces)'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
+export const GetPipelineStepLogSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pipeline_uuid: z
+    .string()
+    .describe('The pipeline UUID (with or without curly braces)'),
+  step_uuid: z
+    .string()
+    .describe('The step UUID (with or without curly braces)'),
+});
+
+export const ListUserPullRequestsSchema = z.object({
+  selected_user: z
+    .string()
+    .describe(
+      "The username or UUID of the user to list PRs for. Use the authenticated user's username to see your own PRs."
+    ),
+  state: z
+    .enum(['OPEN', 'MERGED', 'DECLINED', 'SUPERSEDED'])
+    .optional()
+    .describe('Filter by pull request state'),
+  page: z.number().optional().describe('Page number for pagination'),
+  pagelen: z
+    .number()
+    .optional()
+    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+});
+
 export const SearchCodeSchema = z.object({
   workspace: z.string().describe('The workspace to search in'),
   search_query: z.string().describe('Search query for code content'),
