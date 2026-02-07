@@ -5,6 +5,126 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-02-08
+
+### Added
+
+- **Commit handler module**: New `src/handlers/commit.ts` with dedicated handlers for commit operations
+  - `bb_get_commit` — Get detailed commit information (hash, message, author, date, parents)
+  - `bb_get_commit_statuses` — Retrieve CI/CD build statuses for a specific commit with status icons
+  - `bb_get_merge_base` — Find the common ancestor between two commits or branches
+  - `bb_get_file_history` — View commit history for a specific file with author and size metadata
+
+- **Pipeline handler module**: New `src/handlers/pipeline.ts` with full CI/CD pipeline support
+  - `bb_list_pipelines` — List pipeline runs for a repository sorted by most recent
+  - `bb_get_pipeline` — Get detailed info for a specific pipeline run (status, branch, commit, trigger, duration)
+  - `bb_get_pipeline_steps` — List steps/stages of a pipeline with execution details
+  - `bb_get_pipeline_step_log` — Retrieve build log output for a pipeline step (truncated to 50K chars for large logs)
+  - Helper utilities for UUID normalization, pipeline state formatting, and human-readable duration display
+
+- **Pull request enhancements**: Extended `src/handlers/pullrequest.ts` with new tools
+  - `bb_get_pr_commits` — List commits belonging to a pull request
+  - `bb_get_pr_statuses` — Get CI/CD build statuses for a pull request
+  - `bb_get_pull_request_comment` — Fetch a single PR comment by ID
+  - `bb_get_comment_thread` — Retrieve comment thread with all nested replies
+
+- **Repository handler enhancements**: Extended `src/handlers/repository.ts` with detail tools
+  - `bb_get_tag` — Get detailed tag information including target commit
+  - `bb_get_branch` — Get detailed branch information with merge strategies
+
+- **Workspace and user tools**: Extended `src/handlers/workspace.ts` with user-facing tools
+  - `bb_get_user` — Get information about a specific Bitbucket user
+  - `bb_get_current_user` — Get details of the currently authenticated user
+  - `bb_list_user_pull_requests` — List pull requests for a specific user across repositories
+
+- **Comprehensive TypeScript interfaces** in `src/types.ts` for strong typing
+  - `BitbucketCommitDetailed` — Detailed commit with parents and repository info
+  - `BitbucketCommitStatus` — CI/CD build status with state enum (`SUCCESSFUL`, `FAILED`, `INPROGRESS`, `STOPPED`)
+  - `BitbucketTag` — Tag ref with target commit details
+  - `BitbucketBranchDetailed` — Branch with merge strategies and default merge strategy
+  - `BitbucketMergeBase` — Merge base result interface
+  - `BitbucketFileHistoryEntry` — File history with commit and size metadata
+  - `BitbucketPipeline` — Pipeline run with state, target, trigger, and duration
+  - `BitbucketPipelineStep` — Pipeline step with script commands and image info
+  - `BitbucketPRTask` — PR task with state and creator
+  - `BitbucketSrcListingResponse` — Typed source listing response
+
+- **New Zod schemas** in `src/schemas.ts` for all new tools with descriptive field documentation
+
+- **Comprehensive test suite**: 4 test scripts for real-world validation
+  - `test_pr_445.js` — Full feature testing across 8 categories using real PR #445
+  - `test_pr_445_advanced.js` — Advanced testing for commit, diff, and tag tools with correct parameter names
+  - `test_pr_445_final.js` — Complete coverage with dynamic ID extraction
+  - `test_pr_408_comments.js` — PR comment thread verification with nested replies and inline comments
+  - Test results documented in `docs/TEST_RESULTS_PR_445.md`
+
+- **Expanded API test coverage** in `src/__tests__/api.test.ts` with significantly more test cases
+
+### Changed
+
+- **Handler registry**: Updated `src/handlers/index.ts` with 38 total registered tools (up from previous count)
+  - Tools organized by domain: repository, pull request, diff, commit, issue, workspace/user, search, pipeline
+- **Tool definitions**: Updated `src/tools.ts` with definitions for all new tools
+- **Documentation**: Updated `README.md`, `.github/copilot-instructions.md`, and `docs/reviews/codebase-review.md` to reflect new architecture and tools
+- **Tool count**: Expanded from ~24 tools to **38 tools** total, with 31 verified via automated tests (100% pass rate on testable tools)
+
+## [2.0.1] - 2026-01-26
+
+### Added
+- **Update instructions**: Added instructions for updating to the latest version in README
+
+## [2.0.0] - 2026-01-26
+
+### Added
+- **PR comment retrieval**: New `bb_get_pull_request_comment` tool to fetch a single PR comment by ID
+  - Implemented `handleGetPullRequestComment` handler with `GetPullRequestCommentSchema` validation
+  - Enhanced `BitbucketComment` interface with `updated_on` and `deleted` fields
+- **Comment threads**: New `bb_get_comment_thread` tool to retrieve comment threads with all nested replies
+  - Implemented `handleGetCommentThread` handler with `GetCommentThreadSchema` validation
+- **Git reference resolution**: Implemented `resolveRefToCommitSha` function for uniform git reference resolution
+  - Enables robust handling of branches, tags, and commit SHAs when browsing repositories
+- **Test suite**: Added `test_all_tools.js` — discovery-based test script with sequential workspace → repo → PR → issue testing
+
+### Changed
+- **Documentation**: Updated README and `.github/copilot-instructions.md` with PR comment and comment thread tool documentation
+
+## [1.5.1] - 2025-12-20
+
+### Added
+- **Cursor IDE support**: Added Cursor configuration examples in README for MCP integration
+
+### Changed
+- **Version**: Bumped version to 1.5.1 in package.json and related files
+
+## [1.5.0] - 2025-12-20
+
+### Added
+- **Modular handler architecture**: Major refactoring — replaced large switch statement in `tools.ts` with handler registry pattern
+  - New `src/handlers/` directory with domain-specific handler modules:
+    - `repository.ts` — Repository, branch, tag, file, and browsing operations
+    - `pullrequest.ts` — Pull request listing, details, comments, and activity
+    - `issue.ts` — Issue listing and detail retrieval
+    - `workspace.ts` — Workspace discovery and user operations
+    - `search.ts` — Repository and code search operations
+    - `diff.ts` — Diff and diffstat operations (already existed, now modularized)
+  - `src/handlers/index.ts` — Central handler registry mapping tool names to handlers
+  - `src/handlers/types.ts` — Shared `ToolHandler` and `ToolResponse` interfaces
+  - Reduced `tools.ts` from ~800 lines to a clean lookup pattern
+- **API test suite**: Added `src/__tests__/api.test.ts` with comprehensive API layer tests
+- **Development guide**: Created `DEVELOPMENT.md` with detailed development and authentication documentation
+- **Publishing guide**: Created `docs/publishing.md` with comprehensive NPM and GitHub releases workflow
+- **Codebase review**: Added `docs/reviews/codebase-review.md` with architecture analysis
+
+### Changed
+- **Authentication**: Streamlined authentication process, removed legacy app password support
+  - Simplified to API token (`BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL`) only
+  - Removed deprecated app password configuration from code and documentation
+- **README**: Streamlined authentication section and enhanced integration instructions
+
+### Removed
+- **Legacy files**: Removed `src/index-new.ts` and `src/index-old.ts` (consolidated into modular architecture)
+- **App password auth**: Removed legacy app password authentication support from config and API layer
+
 ## [1.4.13] - 2025-08-23
 
 ### Changed

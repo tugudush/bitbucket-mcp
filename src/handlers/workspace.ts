@@ -7,12 +7,14 @@ import {
   GetWorkspaceSchema,
   GetUserSchema,
   GetCurrentUserSchema,
+  ListUserPullRequestsSchema,
 } from '../schemas.js';
 import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
 import type {
   BitbucketApiResponse,
   BitbucketWorkspace,
   BitbucketUser,
+  BitbucketPullRequest,
 } from '../types.js';
 import { createResponse, ToolResponse } from './types.js';
 
@@ -106,5 +108,47 @@ export async function handleGetCurrentUser(
       `Website: ${data.website || 'None'}\n` +
       `Location: ${data.location || 'Not specified'}\n` +
       `Created: ${data.created_on}`
+  );
+}
+
+/**
+ * List all pull requests where a user is author or reviewer across all repos
+ */
+export async function handleListUserPullRequests(
+  args: unknown
+): Promise<ToolResponse> {
+  const parsed = ListUserPullRequestsSchema.parse(args);
+  const params: Record<string, unknown> = {
+    page: parsed.page,
+    pagelen: parsed.pagelen,
+  };
+  if (parsed.state) params.state = parsed.state;
+
+  const url = addQueryParams(
+    buildApiUrl(`/pullrequests/${encodeURIComponent(parsed.selected_user)}`),
+    params
+  );
+  const data =
+    await makeRequest<BitbucketApiResponse<BitbucketPullRequest>>(url);
+
+  if (!data.values || data.values.length === 0) {
+    return createResponse(
+      `No pull requests found for user ${parsed.selected_user}${parsed.state ? ` with state ${parsed.state}` : ''}.`
+    );
+  }
+
+  const prList = data.values
+    .map(
+      (pr: BitbucketPullRequest) =>
+        `- #${pr.id}: ${pr.title}\n` +
+        `  Author: ${pr.author.display_name}\n` +
+        `  State: ${pr.state}\n` +
+        `  Created: ${pr.created_on}\n` +
+        `  Source: ${pr.source.branch.name} → ${pr.destination.branch.name}`
+    )
+    .join('\n\n');
+
+  return createResponse(
+    `Pull requests for user ${parsed.selected_user}${parsed.state ? ` (${parsed.state})` : ''} (${data.size} total):\n\n${prList}`
   );
 }

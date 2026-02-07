@@ -7,7 +7,7 @@ import { API_CONSTANTS } from './schemas.js';
  */
 
 // Package version - kept in sync with package.json
-export const VERSION = '1.5.1';
+export const VERSION = '3.0.0';
 
 // Get config dynamically to handle environment changes
 function getConfig() {
@@ -172,6 +172,104 @@ export async function makeRequest<T = unknown>(
   }
 
   // Should not reach here, but throw last error if we do
+  throw (
+    lastError ||
+    new Error(`Request failed after ${API_CONSTANTS.RETRY_ATTEMPTS} attempts`)
+  );
+}
+
+/**
+ * Make an authenticated request that returns raw text (not JSON).
+ * Used for diff endpoints that return text/plain content.
+ * Follows redirects automatically (PR diff endpoints return 302).
+ */
+export async function makeTextRequest(
+  url: string,
+  options: RequestInit = {}
+): Promise<string> {
+  // Enforce read-only behavior
+  const requestedMethod = (options.method || 'GET').toString().toUpperCase();
+  if (requestedMethod !== 'GET') {
+    throw new Error(
+      `Only GET requests are allowed. Attempted: ${requestedMethod} ${url}`
+    );
+  }
+
+  const config = getConfig();
+  const headers: Record<string, string> = {
+    ...buildRequestHeaders('text/plain', config),
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  const timeout = config.BITBUCKET_REQUEST_TIMEOUT;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= API_CONSTANTS.RETRY_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+        redirect: 'follow', // Follow 302 redirects from PR diff endpoints
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
+
+        if (
+          isRetryableError(response.status) &&
+          attempt < API_CONSTANTS.RETRY_ATTEMPTS
+        ) {
+          const backoffMs = Math.pow(2, attempt - 1) * 1000;
+          await sleep(backoffMs);
+          lastError = createApiError(
+            response.status,
+            response.statusText,
+            errorData,
+            url
+          );
+          continue;
+        }
+
+        throw createApiError(
+          response.status,
+          response.statusText,
+          errorData,
+          url
+        );
+      }
+
+      return await response.text();
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        lastError = new Error(`Request timeout after ${timeout}ms: ${url}`);
+        if (attempt < API_CONSTANTS.RETRY_ATTEMPTS) {
+          const backoffMs = Math.pow(2, attempt - 1) * 1000;
+          await sleep(backoffMs);
+          continue;
+        }
+        throw lastError;
+      }
+
+      throw error;
+    }
+  }
+
   throw (
     lastError ||
     new Error(`Request failed after ${API_CONSTANTS.RETRY_ATTEMPTS} attempts`)

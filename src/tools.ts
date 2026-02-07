@@ -18,6 +18,23 @@ import {
   GetPullRequestCommentSchema,
   GetCommentThreadSchema,
   GetPullRequestActivitySchema,
+  GetPullRequestDiffSchema,
+  GetPullRequestDiffstatSchema,
+  GetPullRequestCommitsSchema,
+  GetPullRequestStatusesSchema,
+  GetDiffSchema,
+  GetDiffstatSchema,
+  GetCommitSchema,
+  GetCommitStatusesSchema,
+  GetMergeBaseSchema,
+  GetFileHistorySchema,
+  GetTagsSchema,
+  GetTagSchema,
+  GetBranchSchema,
+  ListPipelinesSchema,
+  GetPipelineSchema,
+  GetPipelineStepsSchema,
+  GetPipelineStepLogSchema,
   GetIssuesSchema,
   GetIssueSchema,
   GetCommitsSchema,
@@ -29,6 +46,7 @@ import {
   SearchRepositoriesSchema,
   SearchCodeSchema,
   GetWorkspaceSchema,
+  ListUserPullRequestsSchema,
 } from './schemas.js';
 import { toolHandlers } from './handlers/index.js';
 
@@ -99,6 +117,118 @@ export function getToolDefinitions(): Tool[] {
       ) as Tool['inputSchema'],
     },
     {
+      name: 'bb_get_pull_request_diff',
+      description:
+        'Get the raw unified diff for a pull request. Returns text/plain diff output showing all changes.',
+      inputSchema: zodToJsonSchema(
+        GetPullRequestDiffSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pull_request_diffstat',
+      description:
+        'Get the diffstat for a pull request — per-file summary of lines added/removed and change status.',
+      inputSchema: zodToJsonSchema(
+        GetPullRequestDiffstatSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_diff',
+      description:
+        'Get the raw unified diff between commits. Use a single commit hash to diff against its parent, or "commit1..commit2" for comparing two commits.',
+      inputSchema: zodToJsonSchema(GetDiffSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_diffstat',
+      description:
+        'Get diffstat (per-file change summary) between commits. Use a single commit hash or "commit1..commit2".',
+      inputSchema: zodToJsonSchema(GetDiffstatSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pr_commits',
+      description: 'List commits that belong to a pull request',
+      inputSchema: zodToJsonSchema(
+        GetPullRequestCommitsSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pr_statuses',
+      description:
+        'Get CI/CD build statuses for a pull request (checks whether builds pass or fail)',
+      inputSchema: zodToJsonSchema(
+        GetPullRequestStatusesSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_commit',
+      description:
+        'Get detailed information about a specific commit (hash, message, author, parents)',
+      inputSchema: zodToJsonSchema(GetCommitSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_commit_statuses',
+      description: 'Get CI/CD build statuses for a specific commit',
+      inputSchema: zodToJsonSchema(
+        GetCommitStatusesSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_merge_base',
+      description:
+        'Get the common ancestor (merge-base) between two commits or branches. Use "branch1..branch2" format.',
+      inputSchema: zodToJsonSchema(GetMergeBaseSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_file_history',
+      description:
+        'Get the commit history for a specific file — shows which commits modified the file and when.',
+      inputSchema: zodToJsonSchema(GetFileHistorySchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_tags',
+      description: 'List tags (release tags, version tags) for a repository',
+      inputSchema: zodToJsonSchema(GetTagsSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_tag',
+      description:
+        'Get detailed information about a specific tag including its target commit',
+      inputSchema: zodToJsonSchema(GetTagSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_branch',
+      description:
+        'Get detailed information about a specific branch including target commit and merge strategies',
+      inputSchema: zodToJsonSchema(GetBranchSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_list_pipelines',
+      description:
+        'List CI/CD pipeline runs for a repository. Shows build status, trigger, and duration.',
+      inputSchema: zodToJsonSchema(ListPipelinesSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pipeline',
+      description: 'Get detailed information about a specific pipeline run',
+      inputSchema: zodToJsonSchema(GetPipelineSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pipeline_steps',
+      description:
+        'List the steps/stages of a pipeline run with their status and duration',
+      inputSchema: zodToJsonSchema(
+        GetPipelineStepsSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pipeline_step_log',
+      description:
+        'Get the build log output for a specific pipeline step. Useful for diagnosing build failures.',
+      inputSchema: zodToJsonSchema(
+        GetPipelineStepLogSchema
+      ) as Tool['inputSchema'],
+    },
+    {
       name: 'bb_get_issues',
       description: 'Get issues for a repository',
       inputSchema: zodToJsonSchema(GetIssuesSchema) as Tool['inputSchema'],
@@ -161,6 +291,14 @@ export function getToolDefinitions(): Tool[] {
       name: 'bb_get_workspace',
       description: 'Get information about a workspace',
       inputSchema: zodToJsonSchema(GetWorkspaceSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_list_user_pull_requests',
+      description:
+        'List all pull requests where a user is the author or a reviewer, across all repositories. Useful for seeing all open PRs assigned to you.',
+      inputSchema: zodToJsonSchema(
+        ListUserPullRequestsSchema
+      ) as Tool['inputSchema'],
     },
   ];
 }

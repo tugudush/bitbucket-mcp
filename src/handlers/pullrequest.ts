@@ -9,6 +9,8 @@ import {
   GetPullRequestCommentSchema,
   GetCommentThreadSchema,
   GetPullRequestActivitySchema,
+  GetPullRequestCommitsSchema,
+  GetPullRequestStatusesSchema,
 } from '../schemas.js';
 import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
 import type {
@@ -16,6 +18,8 @@ import type {
   BitbucketPullRequest,
   BitbucketComment,
   BitbucketActivity,
+  BitbucketCommit,
+  BitbucketCommitStatus,
 } from '../types.js';
 import { createResponse, ToolResponse } from './types.js';
 
@@ -294,5 +298,102 @@ export async function handleGetPullRequestActivity(
 
   return createResponse(
     `Activity for PR #${parsed.pull_request_id} (${data.size} total):\n\n${activityList}`
+  );
+}
+
+/**
+ * List commits that belong to a pull request
+ */
+export async function handleGetPullRequestCommits(
+  args: unknown
+): Promise<ToolResponse> {
+  const parsed = GetPullRequestCommitsSchema.parse(args);
+  const params = {
+    page: parsed.page,
+    pagelen: parsed.pagelen,
+  };
+  const url = addQueryParams(
+    buildApiUrl(
+      `/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/commits`
+    ),
+    params
+  );
+  const data = await makeRequest<BitbucketApiResponse<BitbucketCommit>>(url);
+
+  if (!data.values || data.values.length === 0) {
+    return createResponse(
+      `No commits found for PR #${parsed.pull_request_id}.`
+    );
+  }
+
+  const commitList = data.values
+    .map(
+      (commit: BitbucketCommit) =>
+        `- ${commit.hash.substring(0, 8)}: ${commit.message.split('\n')[0]}\n` +
+        `  Author: ${commit.author.user?.display_name || commit.author.raw}\n` +
+        `  Date: ${commit.date}`
+    )
+    .join('\n\n');
+
+  return createResponse(
+    `Commits for PR #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug} (${data.values.length} commits):\n\n${commitList}`
+  );
+}
+
+/**
+ * Get CI/CD build statuses for a pull request
+ */
+export async function handleGetPullRequestStatuses(
+  args: unknown
+): Promise<ToolResponse> {
+  const parsed = GetPullRequestStatusesSchema.parse(args);
+  const params = {
+    page: parsed.page,
+    pagelen: parsed.pagelen,
+  };
+  const url = addQueryParams(
+    buildApiUrl(
+      `/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/statuses`
+    ),
+    params
+  );
+  const data =
+    await makeRequest<BitbucketApiResponse<BitbucketCommitStatus>>(url);
+
+  if (!data.values || data.values.length === 0) {
+    return createResponse(
+      `No build statuses found for PR #${parsed.pull_request_id}.`
+    );
+  }
+
+  const statusIcon = (state: string) => {
+    switch (state) {
+      case 'SUCCESSFUL':
+        return '✅';
+      case 'FAILED':
+        return '❌';
+      case 'INPROGRESS':
+        return '🔄';
+      case 'STOPPED':
+        return '⏹️';
+      default:
+        return '❓';
+    }
+  };
+
+  const statusList = data.values
+    .map(
+      (s: BitbucketCommitStatus) =>
+        `${statusIcon(s.state)} ${s.name}\n` +
+        `  State: ${s.state}\n` +
+        `  Key: ${s.key}\n` +
+        (s.description ? `  Description: ${s.description}\n` : '') +
+        (s.url ? `  URL: ${s.url}\n` : '') +
+        `  Updated: ${s.updated_on || s.created_on}`
+    )
+    .join('\n\n');
+
+  return createResponse(
+    `Build statuses for PR #${parsed.pull_request_id} (${data.values.length} total):\n\n${statusList}`
   );
 }
