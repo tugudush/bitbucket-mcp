@@ -18,6 +18,10 @@ import {
   GetPullRequestCommentSchema,
   GetCommentThreadSchema,
   GetPullRequestActivitySchema,
+  GetPullRequestDiffSchema,
+  GetPullRequestDiffstatSchema,
+  GetDiffSchema,
+  GetDiffstatSchema,
   GetIssuesSchema,
   GetIssueSchema,
   GetCommitsSchema,
@@ -97,6 +101,34 @@ export function getToolDefinitions(): Tool[] {
       inputSchema: zodToJsonSchema(
         GetPullRequestActivitySchema
       ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pull_request_diff',
+      description:
+        'Get the raw unified diff for a pull request. Returns text/plain diff output showing all changes.',
+      inputSchema: zodToJsonSchema(
+        GetPullRequestDiffSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_pull_request_diffstat',
+      description:
+        'Get the diffstat for a pull request — per-file summary of lines added/removed and change status.',
+      inputSchema: zodToJsonSchema(
+        GetPullRequestDiffstatSchema
+      ) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_diff',
+      description:
+        'Get the raw unified diff between commits. Use a single commit hash to diff against its parent, or "commit1..commit2" for comparing two commits.',
+      inputSchema: zodToJsonSchema(GetDiffSchema) as Tool['inputSchema'],
+    },
+    {
+      name: 'bb_get_diffstat',
+      description:
+        'Get diffstat (per-file change summary) between commits. Use a single commit hash or "commit1..commit2".',
+      inputSchema: zodToJsonSchema(GetDiffstatSchema) as Tool['inputSchema'],
     },
     {
       name: 'bb_get_issues',

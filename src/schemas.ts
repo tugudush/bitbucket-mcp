@@ -230,6 +230,70 @@ export const SearchRepositoriesSchema = z.object({
     .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
+export const GetPullRequestDiffSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pull_request_id: z.number().describe('The pull request ID'),
+  context: z
+    .number()
+    .optional()
+    .describe('Number of context lines around changes (like git diff -U)'),
+  path: z.string().optional().describe('Filter diff to a single file path'),
+});
+
+export const GetPullRequestDiffstatSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  pull_request_id: z.number().describe('The pull request ID'),
+  path: z.string().optional().describe('Filter diffstat to a single file path'),
+});
+
+export const GetDiffSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  spec: z
+    .string()
+    .describe(
+      'Commit spec: a single commit hash (diffs against parent), or two commits as "commit1..commit2"'
+    ),
+  context: z
+    .number()
+    .optional()
+    .describe('Number of context lines around changes'),
+  path: z.string().optional().describe('Filter diff to a single file path'),
+  ignore_whitespace: z
+    .boolean()
+    .optional()
+    .describe('Ignore whitespace changes'),
+  topic: z
+    .boolean()
+    .optional()
+    .describe(
+      'When true with two-commit spec, produces a 3-dot diff (source vs merge-base)'
+    ),
+});
+
+export const GetDiffstatSchema = z.object({
+  workspace: z.string().describe('The workspace or username'),
+  repo_slug: z.string().describe('The repository name'),
+  spec: z
+    .string()
+    .describe(
+      'Commit spec: a single commit hash (diffs against parent), or two commits as "commit1..commit2"'
+    ),
+  path: z.string().optional().describe('Filter diffstat to a single file path'),
+  ignore_whitespace: z
+    .boolean()
+    .optional()
+    .describe('Ignore whitespace changes'),
+  topic: z
+    .boolean()
+    .optional()
+    .describe(
+      'When true with two-commit spec, produces a 3-dot diff (source vs merge-base)'
+    ),
+});
+
 export const SearchCodeSchema = z.object({
   workspace: z.string().describe('The workspace to search in'),
   search_query: z.string().describe('Search query for code content'),

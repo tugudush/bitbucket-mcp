@@ -25,6 +25,14 @@ export {
   handleGetPullRequestActivity,
 } from './pullrequest.js';
 
+// Diff handlers
+export {
+  handleGetPullRequestDiff,
+  handleGetPullRequestDiffstat,
+  handleGetDiff,
+  handleGetDiffstat,
+} from './diff.js';
+
 // Issue handlers
 export { handleGetIssues, handleGetIssue } from './issue.js';
 
@@ -57,6 +65,12 @@ import {
   handleGetCommentThread,
   handleGetPullRequestActivity,
 } from './pullrequest.js';
+import {
+  handleGetPullRequestDiff,
+  handleGetPullRequestDiffstat,
+  handleGetDiff,
+  handleGetDiffstat,
+} from './diff.js';
 import { handleGetIssues, handleGetIssue } from './issue.js';
 import {
   handleListWorkspaces,
@@ -86,6 +100,12 @@ export const toolHandlers: Record<string, ToolHandler> = {
   bb_get_pull_request_comment: handleGetPullRequestComment,
   bb_get_comment_thread: handleGetCommentThread,
   bb_get_pull_request_activity: handleGetPullRequestActivity,
+
+  // Diff tools
+  bb_get_pull_request_diff: handleGetPullRequestDiff,
+  bb_get_pull_request_diffstat: handleGetPullRequestDiffstat,
+  bb_get_diff: handleGetDiff,
+  bb_get_diffstat: handleGetDiffstat,
 
   // Issue tools
   bb_get_issues: handleGetIssues,

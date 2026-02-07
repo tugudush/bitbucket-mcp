@@ -181,6 +181,34 @@ export interface BitbucketApiResponse<T> {
   pagelen?: number;
 }
 
+// Diffstat interfaces for /diffstat/{spec} endpoint
+export interface DiffstatFile {
+  path: string;
+  escaped_path: string;
+  type: string;
+  links?: {
+    self: { href: string };
+  };
+}
+
+export interface DiffstatEntry {
+  type: string;
+  status: 'added' | 'removed' | 'modified' | 'renamed';
+  lines_removed: number;
+  lines_added: number;
+  old?: DiffstatFile;
+  new?: DiffstatFile;
+}
+
+export interface DiffstatResponse {
+  pagelen: number;
+  values: DiffstatEntry[];
+  page: number;
+  size: number;
+  next?: string;
+  previous?: string;
+}
+
 // Items returned by the Bitbucket
 // /repositories/{workspace}/{repo_slug}/src/{ref}/{path} endpoint
 export interface BitbucketSrcListingResponse {
