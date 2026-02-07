@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, feature/github-actions ]
+    branches: [main, develop, feature/github-actions, chore/update-develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   build-and-test:
@@ -17,11 +17,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Security Audit
+        run: npm audit --audit-level=high
 
       - name: Run CI (Lint, Typecheck, Format, Build, and Test)
         run: npm run ltfb && npm test
