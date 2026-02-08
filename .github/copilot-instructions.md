@@ -69,8 +69,6 @@ export async function handleToolCall(request: CallToolRequest) {
 - **`bb_get_comment_thread`** - Get comment thread with nested replies
 
 **Test Coverage:** 31 out of 38 tools verified (100% success on testable tools)
-- See `docs/TEST_RESULTS_PR_445.md` for comprehensive test results
-- Test suite: `test_pr_445.js`, `test_pr_445_advanced.js`, `test_pr_445_final.js`, `test_pr_408_comments.js`
 
 ## Critical Development Workflow
 
@@ -210,11 +208,10 @@ bb_get_merge_base({ revspec: 'a..b' })    // NOT spec
 - **Maintainability**: Individual handler files easier to test and modify
 
 ### Comprehensive Testing (2026-02)
-- **4 test scripts**: Progressive discovery, full coverage, comment verification
-- **31/33 tools verified**: 100% success on testable tools  
-- **Real-world validation**: Using actual production PRs (#445, #408)
+- **31/38 tools verified**: 100% success on testable tools  
+- **Real-world validation**: Using actual production scenarios
 - **Dynamic ID extraction**: Pattern for extracting IDs from responses
-- **Documentation**: Complete test results in `docs/TEST_RESULTS_PR_445.md`
+- **Discovery-based approach**: Sequential workspace → repo → PR → issue testing
 
 ### Enhanced Configuration (2025-08)
 - **Type-safe config**: Zod schema validation with helpful error messages
@@ -341,8 +338,9 @@ const prId = match ? parseInt(match[1]) : null;
 - Use `${workspaceFolder}/build/index.js` for workspace-relative paths
 - **Auth**: Use `BITBUCKET_API_TOKEN` + `BITBUCKET_EMAIL`
 
-### Claude Desktop Integration
-- Requires `claude_desktop_config.json` modification with `mcpServers` section
+### Claude Code Integration
+- CLI-based setup: `claude mcp add --transport stdio` with `--env` flags
+- Project-scope config: `.mcp.json` file in project root
 - Environment variables passed via `env` object in configuration
 - **Note**: App passwords are deprecated - use API tokens with email
 

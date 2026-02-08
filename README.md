@@ -1,6 +1,6 @@
 # Bitbucket MCP Server
 
-A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Desktop.
+A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Code.
 
 **🎯 38 tools available** | **✅ 100% tested** (31/38 tools verified) | **🏗️ Modular architecture**
 
@@ -306,6 +306,17 @@ To create your own tests:
 - Open Copilot Chat with `Ctrl+Alt+I`
 - Try: `using bitbucket, list repositories in myworkspace`
 
+### Debugging
+Enable debug logging to see internal state and API requests:
+```bash
+BITBUCKET_DEBUG=true node build/index.js
+```
+
+Debug output is printed to stderr and includes:
+- Configuration details at startup
+- Authentication method used
+- API request/response details
+
 ### Architecture
 Modular design with handler registry pattern:
 - `src/handlers/` - Domain-specific tool handlers (repository, pullrequest, commit, diff, workspace, search, issue, pipeline)
@@ -361,8 +372,6 @@ The server implements **38 tools** covering all major Bitbucket Cloud API v2.0 e
 - **Search API** - Code search with language filtering and match highlighting
 - **Users API** - User and authenticated user information
 - **Pipelines API** - CI/CD pipeline information (read-only)
-
-**Test Coverage:** See [`docs/TEST_RESULTS_PR_445.md`](docs/TEST_RESULTS_PR_445.md) for verification details.
 
 ## Contributing
 
