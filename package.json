@@ -77,10 +77,6 @@
   "lint-staged": {
     "*.ts": "prettier --write"
   },
-  "overrides": {
-    "glob": "^13.0.0",
-    "inflight": "npm:@npmcli/inflight@^1.0.1"
-  },
   "files": [
     "build/**/*",
     "!build/__tests__",
