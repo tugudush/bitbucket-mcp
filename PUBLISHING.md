@@ -20,39 +20,41 @@ npm run build      # compile TypeScript
 npm test           # run tests
 ```
 
-### 2. Update Version Constants
-Before creating a new version, update the `VERSION` constant in both source files to match your new version:
-
-**Files to update:**
-- `src/index.ts` - Line 18: `export const VERSION = 'x.x.x';`
-- `src/api.ts` - Line 10: `export const VERSION = 'x.x.x';`
+### 2. Increment Version
+Use the automated version increment scripts to update both `package.json` and `src/version.ts`:
 
 ```bash
-# Example: If bumping to 1.5.0, update both files:
-# export const VERSION = '1.5.0';
+# Increment version automatically
+npm run vi:patch   # Bug fixes (1.0.0 → 1.0.1)
+npm run vi:minor   # New features (1.0.0 → 1.1.0)
+npm run vi:major   # Breaking changes (1.0.0 → 2.0.0)
 ```
 
-> **Note:** These VERSION constants are used for the User-Agent header and server identification. They must match the version in `package.json`.
+This automatically updates:
+- `package.json` version
+- `src/version.ts` VERSION constant
 
-### 3. Create a Version
-Choose the right version type:
-- **Patch** (`1.0.1`) - Bug fixes
-- **Minor** (`1.1.0`) - New features
-- **Major** (`2.0.0`) - Breaking changes
+> **Note:** The VERSION constant is used for the User-Agent header and server identification.
 
+### 3. Commit and Tag
 ```bash
-# Create version (this also creates a git tag)
-npm version patch   # or minor/major
+# Commit the version changes
+git add package.json src/version.ts
+git commit -m "chore: bump version to x.x.x"
+
+# Create git tag
+git tag vx.x.x
 ```
 
-### 3. Publish to NPM
+### 4. Publish to NPM
 ```bash
 npm publish
 ```
 
 ### 5. Create GitHub Release
 ```bash
-# Push the tag created by npm version
+# Push code and tags
+git push
 git push --tags
 
 # Create GitHub release using the latest tag automatically
@@ -64,12 +66,13 @@ gh release create $(git describe --tags --abbrev=0) --notes "Bug fixes and impro
 
 ## Understanding Git Tags
 
-When you run `npm version`, it automatically:
-1. Updates `package.json` version
-2. Creates a git commit
-3. Creates a git tag (e.g., `v1.0.1`)
+This project uses manual version management with custom scripts:
 
-You can also create tags manually:
+1. `npm run vi:patch/minor/major` updates version numbers in files
+2. You manually commit the changes
+3. You manually create a git tag (e.g., `v1.0.1`)
+
+Useful git tag commands:
 ```bash
 # Create and push a tag manually
 git tag v1.0.1
@@ -98,9 +101,6 @@ gh release create v1.0.1 --title "Version 1.0.1" --notes "
 - Added new search feature
 - Improved error handling
 "
-
-# Upload files to release
-gh release create v1.0.1 --generate-notes dist/*.zip
 ```
 
 ### Using GitHub Web Interface
@@ -120,31 +120,32 @@ git add .
 git commit -m "feat: add new feature"
 
 # 2. Test everything
-npm run ltf
-npm run build
-npm test
+npm run ltfb         # lint, typecheck, format, build
+npm test             # run tests
 
 # 3. Check what will be published
 npm pack --dry-run
 
-# 4. Update VERSION constants in source files
-# Edit src/index.ts and src/api.ts to match your new version
-# Example: export const VERSION = '1.5.0';
+# 4. Increment version (automatically updates package.json and src/version.ts)
+npm run vi:minor     # or vi:patch / vi:major
 
-# 5. Commit version constant updates
-git add src/index.ts src/api.ts
-git commit -m "chore: bump version constants to 1.5.0"
+# 5. Commit version changes and create tag
+git add package.json src/version.ts
+git commit -m "chore: bump version to 1.5.0"
+git tag v1.5.0
 
-# 6. Create version and publish
-npm version minor      # Creates tag and commits
-npm publish           # Publishes to NPM
+# 6. Push everything
+git push
+git push --tags
 
-# 7. Create GitHub release
-git push --tags       # Push the tag
-gh release create $(git describe --tags --abbrev=0) --generate-notes
+# 7. Publish to NPM
+npm publish
 
-# 8. Verify everything worked
-npm view bitbucket-mcp
+# 8. Create GitHub release
+gh release create v1.5.0 --generate-notes
+
+# 9. Verify everything worked
+npm view @tugudush/bitbucket-mcp
 gh release list
 ```
 
@@ -153,10 +154,17 @@ gh release list
 For testing before official release:
 
 ```bash
-# Create pre-release version
-npm version prerelease --preid=beta  # 1.0.1-beta.0
+# Create pre-release version (manual editing required)
+# 1. Edit package.json and src/version.ts to use pre-release version format
+#    Example: "1.0.1-beta.0"
 
-# Publish with beta tag
+# 2. Commit and tag
+git add package.json src/version.ts
+git commit -m "chore: bump to 1.0.1-beta.0"
+git tag v1.0.1-beta.0
+
+# 3. Push and publish with beta tag
+git push --tags
 npm publish --tag beta
 
 # Create GitHub pre-release
@@ -212,10 +220,12 @@ Make sure your `package.json` has these key fields:
 
 ## Summary
 
-1. **Test** your code (`npm run ltf && npm test`)
-2. **Update** VERSION constants in `src/index.ts` and `src/api.ts`
-3. **Version** your package (`npm version patch/minor/major`)
-4. **Publish** to NPM (`npm publish`)
-5. **Release** on GitHub (`gh release create $(git describe --tags --abbrev=0) --generate-notes`)
+1. **Test** your code (`npm run ltfb && npm test`)
+2. **Increment** version (`npm run vi:patch/minor/major`)
+3. **Commit** changes (`git add . && git commit -m "chore: bump version to x.x.x"`)
+4. **Tag** release (`git tag vx.x.x`)
+5. **Push** everything (`git push && git push --tags`)
+6. **Publish** to NPM (`npm publish`)
+7. **Release** on GitHub (`gh release create vx.x.x --generate-notes`)
 
 That's it! Your package is now available on NPM and GitHub.

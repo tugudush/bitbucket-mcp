@@ -8,19 +8,18 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { initializeConfig } from './config.js';
 import { getToolDefinitions, handleToolCall } from './tools.js';
+import { VERSION } from './version.js';
 
 /**
  * Bitbucket MCP Server
  * A read-only Model Context Protocol server for Bitbucket API access
  */
 
-// Package version - kept in sync with package.json
-export const VERSION = '3.1.0';
-
 // Initialize configuration
 initializeConfig();
 
 // Create server instance
+// Using low-level Server (not McpServer) for advanced handler registry pattern with 38+ tools
 const server = new Server(
   {
     name: 'bitbucket-mcp-server',
