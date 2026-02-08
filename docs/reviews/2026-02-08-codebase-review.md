@@ -8,9 +8,11 @@
 
 ## 1. Executive Summary
 
-The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol server providing 38 tools for interacting with the Bitbucket Cloud API v2.0. The codebase demonstrates strong architectural decisions: modular handler registry, strict TypeScript typing, Zod-based input validation, and defense-in-depth read-only enforcement. All 64 unit tests pass, lint and type checks are clean. Key areas for improvement include expanding test coverage to handler/domain logic, reducing code duplication in the API layer, and addressing a coverage tooling incompatibility.
+The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol server providing 38 tools for interacting with the Bitbucket Cloud API v2.0. The codebase demonstrates strong architectural decisions: modular handler registry, strict TypeScript typing, Zod-based input validation, and defense-in-depth read-only enforcement. All 148 unit tests pass across 11 suites with 92.2% statement coverage, lint and type checks are clean. Remaining areas for improvement include reducing code duplication in the API layer and minor schema/config cleanup.
 
-**Overall Rating: Strong** — Production-quality architecture with good separation of concerns. Incremental improvements recommended.
+**Overall Rating: Strong** — Production-quality architecture with comprehensive test coverage and good separation of concerns.
+
+> **Update (2026-02-09):** Issues H1, H2, M2, M3, and L1 from this review have been resolved via PRs [#80](https://github.com/tugudush/bitbucket-mcp/pull/80), [#81](https://github.com/tugudush/bitbucket-mcp/pull/81), and [#82](https://github.com/tugudush/bitbucket-mcp/pull/82). See updated findings in §12.
 
 ---
 
@@ -21,10 +23,11 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 | Source files (src/) | 18 files |
 | Lines of code (src/*.ts) | 1,805 |
 | Lines of code (handlers/) | ~2,000 |
-| Lines of test code | ~1,007 |
+| Lines of test code | ~3,600 |
 | Total tools | 38 |
-| Unit tests | 64 (all passing) |
-| Test suites | 3 (api, config, errors) |
+| Unit tests | 148 (all passing) |
+| Test suites | 11 (api, config, errors + 8 handlers) |
+| Statement coverage | 92.2% |
 | Lint status | Clean |
 | TypeScript strict mode | Enabled |
 | `any` usage in src/ | 0 explicit `any` types |
@@ -125,31 +128,28 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 
 ### 5.1 Current State
 
-- **3 test suites** covering `api.ts`, `config.ts`, `errors.ts` — 64 tests, all passing.
+- **11 test suites** covering `api.ts`, `config.ts`, `errors.ts`, and all 8 handler modules — 148 tests, all passing.
 - Tests are well-structured with proper mocking (`jest.mock`, `mockFetch`), fake timers for retry/timeout scenarios, and thorough edge case coverage.
-- API tests cover: successful requests, read-only enforcement, auth headers, retry logic (500, 429), timeout/abort, non-JSON error responses.
+- API tests cover: successful requests, read-only enforcement, auth headers, retry logic (500, 429), timeout/abort, non-JSON error responses, `fetchAllPages()` pagination.
 - Config tests cover: default values, env parsing, email validation, URL validation, auth detection, debug logging.
 - Error tests cover: all error classes, `createApiError()` factory, URL-based resource extraction.
+- Handler tests cover: response formatting, error handling, pagination logic, mocked API calls.
 
-### 5.2 Coverage Gap (Critical)
+### 5.2 Coverage Gap — ~~Critical~~ **RESOLVED**
 
-**No handler tests exist.** The 8 handler files (~2,000 LOC) containing all 38 tool implementations have zero unit test coverage. This is the single largest quality gap in the codebase.
+> **Resolved (2026-02-08):** PR [#80](https://github.com/tugudush/bitbucket-mcp/pull/80) added comprehensive unit tests for all 8 handler modules. 92.2% statement coverage achieved.
 
-Recommended priority for handler tests:
-1. `repository.ts` (455 LOC) — Largest file, complex ref resolution and pagination logic
-2. `pullrequest.ts` (399 LOC) — Comment threading, nested reply recursion
-3. `pipeline.ts` (231 LOC) — UUID normalization, state formatting
-4. `diff.ts` (175 LOC) — Text vs JSON requests, diffstat aggregation
+~~**No handler tests exist.**~~ All 8 handler files now have dedicated test suites with mocked `makeRequest`/`makeTextRequest` calls.
 
-### 5.3 Coverage Tooling Issue
+### 5.3 Coverage Tooling Issue — ~~High~~ **RESOLVED**
 
-Running `jest --coverage` fails due to a `test-exclude` module incompatibility with the current Node.js version (`TypeError: The "original" argument must be of type function`). This is a known issue with `test-exclude` and newer Node.js versions. **Tests pass fine without coverage collection.**
+> **Resolved (2026-02-08):** PR [#80](https://github.com/tugudush/bitbucket-mcp/pull/80) updated Jest to v30.0.5 and related dependencies. `jest --coverage` now works correctly.
 
-**Recommendation:** Update `test-exclude` (transitive dependency via Jest) or pin a compatible version in `overrides`.
+~~Running `jest --coverage` fails due to a `test-exclude` module incompatibility.~~
 
-### 5.4 `jest.setup.js` Stale Reference
+### 5.4 `jest.setup.js` Stale Reference — **RESOLVED**
 
-The setup file sets `process.env.BITBUCKET_READ_ONLY = 'true'`, but this env var was removed from the codebase (per CHANGELOG and `config.ts`). This is harmless but should be cleaned up.
+> **Resolved (2026-02-08):** The `BITBUCKET_READ_ONLY` env var reference was removed from `jest.setup.js`.
 
 ---
 
@@ -250,20 +250,21 @@ The setup file sets `process.env.BITBUCKET_READ_ONLY = 'true'`, but this env var
 - `handleBrowseRepository()` has proper fallback logic: tries commit SHA resolution first, falls back to direct ref if that fails.
 - `handleGetFileContent()` correctly paginates with line numbers and uses `makeTextRequest()`.
 
-### `pullrequest.ts` (399 LOC)
-- `handleGetCommentThread()` fetches all comments (pagelen=100) then recursively filters for thread replies. This works for PRs with <100 comments but will miss replies on PRs with more. **Consider paginating through all comments** or using a different approach.
-- The `findReplies()` recursive function has an unused `depth` parameter — it's passed but never used for indentation or limiting.
+### `pullrequest.ts` (423 LOC)
+- `handleGetCommentThread()` now uses `fetchAllPages()` to retrieve all comments across paginated results, resolving the previous pagelen=100 limitation. ✅
+- `calculateDepth()` function properly computes indent depth by walking up parent chains.
+- The `findReplies()` recursive function still passes a `depth` parameter that is not used internally — minor cleanup opportunity.
 
 ### `pipeline.ts` (231 LOC)
 - `normalizeUuid()` correctly handles both `{uuid}` and bare `uuid` formats.
 - `formatDuration()` is well-implemented with hours/minutes/seconds breakdown.
 - Step log truncation (50KB tail) is a pragmatic choice for MCP context limits.
 
-### `search.ts` (115 LOC)
-- `handleSearchRepositories()` performs client-side filtering after fetching all repos from one page. This means:
-  - Only searches within one page of results (not all repos in workspace).
-  - With default `pagelen=10`, it only searches 10 repos.
-  - **Recommendation:** Document this limitation or implement multi-page search.
+### `search.ts` (125 LOC)
+- `handleSearchRepositories()` now uses Bitbucket's server-side BBQL `q` parameter for name/description filtering. ✅
+- Defaults to `pagelen=100` and supports `sort` parameter for flexible result ordering.
+- BBQL injection prevention via double-quote escaping in user input.
+- Code search (`handleSearchCode()`) works independently with workspace-level search endpoint.
 
 ### `diff.ts` (175 LOC)
 - Clean implementation with shared `formatDiffstatEntry()` helper.
@@ -276,43 +277,43 @@ The setup file sets `process.env.BITBUCKET_READ_ONLY = 'true'`, but this env var
 ### Critical (0)
 None.
 
-### High Priority (2)
+### High Priority (2) — **BOTH RESOLVED**
 
-| # | Finding | Location | Recommendation |
+| # | Finding | Location | Status |
 |---|---|---|---|
-| H1 | No handler unit tests | `src/handlers/` | Add tests for handler functions with mocked API calls. Priority: repository, pullrequest, pipeline |
-| H2 | Coverage tooling broken | `jest --coverage` | Update `test-exclude` or Node.js compatibility. Tests pass but coverage metrics unavailable |
+| H1 | ~~No handler unit tests~~ | `src/handlers/` | ✅ **Resolved** — [PR #80](https://github.com/tugudush/bitbucket-mcp/pull/80): 8 handler test suites added (148 total tests, 92.2% coverage) |
+| H2 | ~~Coverage tooling broken~~ | `jest --coverage` | ✅ **Resolved** — [PR #80](https://github.com/tugudush/bitbucket-mcp/pull/80): Jest updated to v30, coverage works |
 
-### Medium Priority (4)
+### Medium Priority (4) — 2 RESOLVED
 
-| # | Finding | Location | Recommendation |
+| # | Finding | Location | Status |
 |---|---|---|---|
-| M1 | API layer code duplication | `api.ts` L80-175, L180-275 | Extract shared retry/timeout logic into private helper |
-| M2 | Comment thread pagination limit | `pullrequest.ts` L210 | `pagelen=100` cap means large threads may be incomplete |
-| M3 | Repo search is single-page only | `search.ts` L30 | Client-side filter only searches one page of repos |
-| M4 | Timeout config accepts NaN | `config.ts` L18 | Add `.pipe(z.number().positive())` after transform |
+| M1 | API layer code duplication | `api.ts` L80-175, L180-275 | Open — Extract shared retry/timeout logic into private helper |
+| M2 | ~~Comment thread pagination limit~~ | `pullrequest.ts` | ✅ **Resolved** — [PR #82](https://github.com/tugudush/bitbucket-mcp/pull/82): Uses `fetchAllPages()` for full pagination |
+| M3 | ~~Repo search is single-page only~~ | `search.ts` | ✅ **Resolved** — [PR #81](https://github.com/tugudush/bitbucket-mcp/pull/81): Uses BBQL server-side filtering |
+| M4 | Timeout config accepts NaN | `config.ts` L18 | Open — Add `.pipe(z.number().positive())` after transform |
 
-### Low Priority (3)
+### Low Priority (3) — 1 RESOLVED
 
-| # | Finding | Location | Recommendation |
+| # | Finding | Location | Status |
 |---|---|---|---|
-| L1 | Stale env var in jest.setup.js | `jest.setup.js` L4 | Remove `BITBUCKET_READ_ONLY` reference |
-| L2 | `GetUserSchema` has misleading field | `schemas.ts` L204 | Remove `username` field or clarify limitation in description |
-| L3 | Unused `depth` parameter | `pullrequest.ts` L218 | Remove parameter or use for indent formatting |
+| L1 | ~~Stale env var in jest.setup.js~~ | `jest.setup.js` L4 | ✅ **Resolved** — [PR #80](https://github.com/tugudush/bitbucket-mcp/pull/80): Removed `BITBUCKET_READ_ONLY` |
+| L2 | `GetUserSchema` has misleading field | `schemas.ts` L204 | Open — Remove `username` field or clarify limitation |
+| L3 | Unused `depth` parameter | `pullrequest.ts` L218 | Open — Remove parameter or use for indent formatting |
 
 ---
 
 ## 13. Recommendations Prioritized
 
-1. **Add handler tests** (H1) — Greatest coverage gap. Mock `makeRequest`/`makeTextRequest` and verify response formatting, error handling, pagination logic.
-2. **Fix coverage tooling** (H2) — Investigate `test-exclude` compatibility or update Jest/Node.js alignment.
+1. ~~**Add handler tests** (H1)~~ — ✅ **RESOLVED** via PR #80
+2. ~~**Fix coverage tooling** (H2)~~ — ✅ **RESOLVED** via PR #80
 3. **Refactor API duplication** (M1) — Extract shared request execution logic to reduce maintenance burden.
-4. **Paginate comment thread fetching** (M2) — Use `next` link to fetch all comments for large PRs.
-5. **Add pagination to repo search** (M3) — Either iterate all pages server-side or document the single-page limitation.
-6. **Clean up minor issues** (L1-L3) — Quick wins for code hygiene.
+4. ~~**Paginate comment thread fetching** (M2)~~ — ✅ **RESOLVED** via PR #82
+5. ~~**Add server-side repo search** (M3)~~ — ✅ **RESOLVED** via PR #81
+6. **Clean up minor issues** (L2-L3) — Quick wins for code hygiene.
 
 ---
 
 ## 14. Conclusion
 
-This is a well-engineered MCP server with clean separation of concerns, strong type safety, and robust error handling. The modular handler registry pattern makes it easy to add new Bitbucket tools. The primary gap is handler-level test coverage — addressing this would bring the project to excellent quality. The codebase has no security concerns, no tech debt markers, and clean lint/typecheck output.
+This is a well-engineered MCP server with clean separation of concerns, strong type safety, and robust error handling. The modular handler registry pattern makes it easy to add new Bitbucket tools. With the addition of comprehensive handler tests (148 tests, 92.2% coverage), working coverage tooling, full comment thread pagination, and server-side repository search, the project has reached excellent quality. Remaining improvements are limited to API layer refactoring (M1), timeout validation (M4), and minor schema cleanup (L2-L3).

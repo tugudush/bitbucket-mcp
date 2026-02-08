@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-02-09
+
+### Added
+- **Comprehensive handler unit tests** ([#72](https://github.com/tugudush/bitbucket-mcp/issues/72), [PR #80](https://github.com/tugudush/bitbucket-mcp/pull/80))
+  - 8 new test suites covering all handler modules: repository, pullrequest, commit, diff, issue, pipeline, search, workspace
+  - 148 total tests across 11 test suites (up from 64 tests in 3 suites)
+  - 92.2% statement coverage, 78.5% branch coverage, 97.3% function coverage
+  - Mocked `makeRequest`/`makeTextRequest` with thorough edge case testing
+- **`fetchAllPages<T>()` utility** ([#75](https://github.com/tugudush/bitbucket-mcp/issues/75), [PR #82](https://github.com/tugudush/bitbucket-mcp/pull/82))
+  - Generic pagination helper in `api.ts` that follows `next` links across all pages
+  - Safety limit of 50 pages (~5,000 items) to prevent infinite loops
+  - Used by `handleGetCommentThread()` to fetch full comment sets on large PRs
+
+### Changed
+- **Repository search now uses server-side filtering** ([#76](https://github.com/tugudush/bitbucket-mcp/issues/76), [PR #81](https://github.com/tugudush/bitbucket-mcp/pull/81))
+  - `bb_search_repositories` now uses Bitbucket's BBQL `q` parameter for server-side name/description search
+  - Defaults to `pagelen=100` (max) and supports `sort` parameter (e.g., `-updated_on`)
+  - Eliminates the previous single-page client-side filtering limitation
+- **Comment thread pagination** ([#75](https://github.com/tugudush/bitbucket-mcp/issues/75), [PR #82](https://github.com/tugudush/bitbucket-mcp/pull/82))
+  - `handleGetCommentThread()` now uses `fetchAllPages()` to retrieve all comments across paginated results
+  - PRs with >100 comments now correctly find all nested replies
+  - Added `calculateDepth()` for visual indent formatting of nested replies
+
+### Fixed
+- **Jest coverage tooling** ([#73](https://github.com/tugudush/bitbucket-mcp/issues/73), [PR #80](https://github.com/tugudush/bitbucket-mcp/pull/80))
+  - Updated Jest to v30.0.5 and related dependencies to resolve `test-exclude` module incompatibility
+  - `jest --coverage` now works correctly with coverage metrics available
+- **Stale jest.setup.js reference** — Removed `BITBUCKET_READ_ONLY` env var from test setup
+
 ## [3.2.2] - 2026-02-08
 
 ### Added
