@@ -33,7 +33,80 @@ describe('Search Handlers', () => {
   });
 
   describe('handleSearchRepositories', () => {
-    it('should search repositories by name', async () => {
+    it('should pass query as BBQL q parameter for server-side filtering', async () => {
+      const mockResponse = {
+        values: [
+          {
+            name: 'test-repo',
+            full_name: 'workspace/test-repo',
+            description: 'A test repo',
+            is_private: false,
+          },
+        ],
+        size: 1,
+      };
+
+      mockMakeRequest.mockResolvedValueOnce(mockResponse);
+
+      const result = await handleSearchRepositories({
+        workspace: 'workspace',
+        query: 'test',
+      });
+
+      // Verify the API was called with a q parameter (BBQL server-side filter)
+      const calledUrl = (mockMakeRequest.mock.calls[0] as string[])[0];
+      expect(calledUrl).toContain('q=');
+      expect(calledUrl).toContain('name');
+      expect(calledUrl).toContain('description');
+      expect(result.content[0].text).toContain('test-repo');
+      expect(result.isError).toBeFalsy();
+    });
+
+    it('should default pagelen to max page size (100)', async () => {
+      const mockResponse = { values: [], size: 0 };
+
+      mockMakeRequest.mockResolvedValueOnce(mockResponse);
+
+      await handleSearchRepositories({
+        workspace: 'workspace',
+        query: 'test',
+      });
+
+      const calledUrl = (mockMakeRequest.mock.calls[0] as string[])[0];
+      expect(calledUrl).toContain('pagelen=100');
+    });
+
+    it('should include sort parameter when provided', async () => {
+      const mockResponse = { values: [], size: 0 };
+
+      mockMakeRequest.mockResolvedValueOnce(mockResponse);
+
+      await handleSearchRepositories({
+        workspace: 'workspace',
+        query: 'test',
+        sort: '-updated_on',
+      });
+
+      const calledUrl = (mockMakeRequest.mock.calls[0] as string[])[0];
+      expect(calledUrl).toContain('sort=-updated_on');
+    });
+
+    it('should escape double quotes in BBQL query', async () => {
+      const mockResponse = { values: [], size: 0 };
+
+      mockMakeRequest.mockResolvedValueOnce(mockResponse);
+
+      await handleSearchRepositories({
+        workspace: 'workspace',
+        query: 'test"injection',
+      });
+
+      const calledUrl = (mockMakeRequest.mock.calls[0] as string[])[0];
+      // The double quote should be escaped in the BBQL query
+      expect(calledUrl).not.toContain('test"injection');
+    });
+
+    it('should display all server-returned results without client-side filtering', async () => {
       const mockResponse = {
         values: [
           {
@@ -48,13 +121,8 @@ describe('Search Handlers', () => {
             description: 'Another test',
             is_private: true,
           },
-          {
-            name: 'unrelated',
-            full_name: 'workspace/unrelated',
-            description: 'Unrelated repo',
-            is_private: false,
-          },
         ],
+        size: 2,
       };
 
       mockMakeRequest.mockResolvedValueOnce(mockResponse);
@@ -64,96 +132,14 @@ describe('Search Handlers', () => {
         query: 'test',
       });
 
+      // All results from server should be displayed (no client-side filtering)
       expect(result.content[0].text).toContain('test-repo');
       expect(result.content[0].text).toContain('another-test');
-      expect(result.content[0].text).not.toContain('unrelated');
-      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('2 results');
     });
 
-    it('should search by description', async () => {
-      const mockResponse = {
-        values: [
-          {
-            name: 'repo1',
-            full_name: 'workspace/repo1',
-            description: 'Contains important keyword',
-            is_private: false,
-          },
-          {
-            name: 'repo2',
-            full_name: 'workspace/repo2',
-            description: 'No match here',
-            is_private: false,
-          },
-        ],
-      };
-
-      mockMakeRequest.mockResolvedValueOnce(mockResponse);
-
-      const result = await handleSearchRepositories({
-        workspace: 'workspace',
-        query: 'important',
-      });
-
-      expect(result.content[0].text).toContain('repo1');
-      expect(result.content[0].text).not.toContain('repo2');
-    });
-
-    it('should match full name', async () => {
-      const mockResponse = {
-        values: [
-          {
-            name: 'test-repo',
-            full_name: 'workspace/test-repo',
-            description: 'Repo',
-            is_private: false,
-          },
-        ],
-      };
-
-      mockMakeRequest.mockResolvedValueOnce(mockResponse);
-
-      const result = await handleSearchRepositories({
-        workspace: 'workspace',
-        query: 'workspace/test',
-      });
-
-      expect(result.content[0].text).toContain('test-repo');
-    });
-
-    it('should be case-insensitive', async () => {
-      const mockResponse = {
-        values: [
-          {
-            name: 'TestRepo',
-            full_name: 'workspace/TestRepo',
-            description: 'Test',
-            is_private: false,
-          },
-        ],
-      };
-
-      mockMakeRequest.mockResolvedValueOnce(mockResponse);
-
-      const result = await handleSearchRepositories({
-        workspace: 'workspace',
-        query: 'TESTREPO',
-      });
-
-      expect(result.content[0].text).toContain('TestRepo');
-    });
-
-    it('should handle no matches', async () => {
-      const mockResponse = {
-        values: [
-          {
-            name: 'repo',
-            full_name: 'workspace/repo',
-            description: 'No match',
-            is_private: false,
-          },
-        ],
-      };
+    it('should handle empty results', async () => {
+      const mockResponse = { values: [], size: 0 };
 
       mockMakeRequest.mockResolvedValueOnce(mockResponse);
 
@@ -163,6 +149,30 @@ describe('Search Handlers', () => {
       });
 
       expect(result.content[0].text).toContain('No repositories');
+    });
+
+    it('should indicate when more results are available', async () => {
+      const mockResponse = {
+        values: [
+          {
+            name: 'test-repo',
+            full_name: 'workspace/test-repo',
+            description: 'A test repo',
+            is_private: false,
+          },
+        ],
+        size: 50,
+        next: 'https://api.bitbucket.org/2.0/repositories/workspace?page=2',
+      };
+
+      mockMakeRequest.mockResolvedValueOnce(mockResponse);
+
+      const result = await handleSearchRepositories({
+        workspace: 'workspace',
+        query: 'test',
+      });
+
+      expect(result.content[0].text).toContain('more results available');
     });
   });
 

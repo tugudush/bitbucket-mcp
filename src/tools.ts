@@ -276,7 +276,7 @@ export function getToolDefinitions(): Tool[] {
     {
       name: 'bb_search_repositories',
       description:
-        'Search for repositories within a workspace by name or description.',
+        'Search for repositories within a workspace by name or description. Uses Bitbucket server-side filtering to search across all repositories, not just the first page. Supports sorting with the sort parameter.',
       inputSchema: zodToJsonSchema(
         SearchRepositoriesSchema
       ) as Tool['inputSchema'],
