@@ -36,14 +36,16 @@ This automatically updates:
 
 > **Note:** The VERSION constant is used for the User-Agent header and server identification.
 
-### 3. Commit and Tag
+### 3. Commit, Tag, and Push
 ```bash
 # Commit the version changes
 git add package.json src/version.ts
 git commit -m "chore: bump version to x.x.x"
 
-# Create git tag
+# Create and push git tag
 git tag vx.x.x
+git push
+git push --tags
 ```
 
 ### 4. Publish to NPM
@@ -53,10 +55,6 @@ npm publish
 
 ### 5. Create GitHub Release
 ```bash
-# Push code and tags
-git push
-git push --tags
-
 # Create GitHub release using the latest tag automatically
 gh release create $(git describe --tags --abbrev=0) --generate-notes
 
@@ -164,6 +162,7 @@ git commit -m "chore: bump to 1.0.1-beta.0"
 git tag v1.0.1-beta.0
 
 # 3. Push and publish with beta tag
+git push
 git push --tags
 npm publish --tag beta
 
@@ -222,10 +221,8 @@ Make sure your `package.json` has these key fields:
 
 1. **Test** your code (`npm run ltfb && npm test`)
 2. **Increment** version (`npm run vi:patch/minor/major`)
-3. **Commit** changes (`git add . && git commit -m "chore: bump version to x.x.x"`)
-4. **Tag** release (`git tag vx.x.x`)
-5. **Push** everything (`git push && git push --tags`)
-6. **Publish** to NPM (`npm publish`)
-7. **Release** on GitHub (`gh release create vx.x.x --generate-notes`)
+3. **Commit, tag, push** (`git add . && git commit && git tag vx.x.x && git push --tags`)
+4. **Publish** to NPM (`npm publish`)
+5. **Release** on GitHub (`gh release create vx.x.x --generate-notes`)
 
 That's it! Your package is now available on NPM and GitHub.
