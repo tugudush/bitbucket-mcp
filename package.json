@@ -7,11 +7,14 @@
   "bin": {
     "bitbucket-mcp": "build/index.js"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "build": "tsc && chmod +x build/index.js",
     "watch": "tsc --watch",
     "start": "node build/index.js",
-    "prepare": "npm run build",
+    "prepare": "husky",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
@@ -57,17 +60,22 @@
     "@eslint/js": "^9.32.0",
     "@jest/globals": "^30.0.5",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.2.1",
+    "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "eslint": "^9.32.0",
+    "husky": "^9.1.7",
     "jest": "^30.0.5",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.1",
     "typescript": "^5.0.0"
   },
+  "lint-staged": {
+    "*.ts": "prettier --write"
+  },
   "overrides": {
-    "glob": "^10.0.0",
+    "glob": "^13.0.0",
     "inflight": "npm:@npmcli/inflight@^1.0.1"
   },
   "files": [
