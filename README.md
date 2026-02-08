@@ -197,13 +197,13 @@ If you built from source:
 - `bb_get_diff` - Get unified diff between commits
 - `bb_get_diffstat` - Get per-file change statistics between commits
 
-### � CI/CD Pipelines (4 tools)
+### 🚀 CI/CD Pipelines (4 tools)
 - `bb_list_pipelines` - List pipeline runs
 - `bb_get_pipeline` - Get detailed pipeline information
 - `bb_get_pipeline_steps` - List pipeline steps/stages
 - `bb_get_pipeline_step_log` - Get build logs for pipeline steps
 
-### �🐛 Issues (2 tools)
+### 🎫 Issues (2 tools)
 - `bb_get_issues` - List repository issues
 - `bb_get_issue` - Get detailed issue information
 
