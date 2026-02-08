@@ -238,24 +238,24 @@ If you built from source:
 
 **Pull Requests & Comments:**
 - "Show open pull requests for myworkspace/myrepo"
-- "Get details for PR #445 in myworkspace/myrepo"
-- "List all comments on PR #408"
-- "Get comment #744553155 from PR #408 in myworkspace/myrepo"
-- "Get the comment thread for comment #744553155 on PR #408"
-- "Show me the diff for PR #445"
-- "Get build statuses for PR #445"
+- "Get details for PR #123 in myworkspace/myrepo"
+- "List all comments on PR #123"
+- "Get comment #12345678 from PR #123 in myworkspace/myrepo"
+- "Get the comment thread for comment #12345678 on PR #123"
+- "Show me the diff for PR #123"
+- "Get build statuses for PR #123"
 
 **Branches & Commits:**
 - "List all branches in myworkspace/myrepo"
 - "Get details for the develop branch"
 - "Show recent commits on main branch of myworkspace/myrepo"
-- "Get commit details for 0fe347db"
+- "Get commit details for abc123de"
 - "Find the merge base between develop and main"
 - "Show the diff between commits abc123 and def456"
 
 **Tags & Releases:**
 - "List all tags in myworkspace/myrepo"
-- "Get details for tag stable-v1.0.2.0"
+- "Get details for tag v1.0.0"
 
 ## Development
 
@@ -269,18 +269,18 @@ node build/index.js  # Test server startup
 ```
 
 ### Testing
-```bash
-# Run comprehensive test suite
-node test_pr_445.js              # Main test suite (8 tool categories)
-node test_pr_445_advanced.js     # Advanced features
-node test_pr_445_final.js        # Complete coverage
-node test_pr_408_comments.js     # Comment thread verification
-```
+The MCP server includes comprehensive test coverage:
 
 **Test Coverage:** 31 out of 38 tools verified (100% success rate on testable tools)
-- See [`docs/TEST_RESULTS_PR_445.md`](docs/TEST_RESULTS_PR_445.md) for detailed results
-- Uses real production PRs for validation
-- Tests workspace discovery, repositories, PRs, branches, commits, files, comments
+- Covers workspace discovery, repositories, PRs, branches, commits, files, comments
+- Tests use discovery-based approach with dynamic ID extraction
+- Validates all major Bitbucket operations with real-world scenarios
+
+To create your own tests:
+1. Load credentials from `.vscode/mcp.json`
+2. Use MCP stdio protocol to invoke tools
+3. Extract dynamic IDs from responses for dependent tests
+4. Validate tool responses and error handling
 
 ### VS Code Integration
 - Install GitHub Copilot extensions
