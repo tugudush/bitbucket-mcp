@@ -5,12 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.1] - 2026-02-09
+
+### Fixed
+- **Documentation accuracy** — Updated all documentation to reflect correct tool and test counts
+  - Fixed tool count: 38 → 37 tools (after removing `bb_list_user_pull_requests` in v3.3.0)
+  - Fixed test count: 148 → 146 tests (after removing `bb_list_user_pull_requests` tests in v3.3.0)
+  - Updated files: README.md, CHANGELOG.md, .github/copilot-instructions.md, docs/reviews/2026-02-08-codebase-review.md, docs/test-results.md
+  - Clarified that `bb_get_user` was fixed (not newly added) in v3.3.0
+  - Added strikethrough note to v3.0.0 entry documenting that `bb_list_user_pull_requests` was removed in v3.3.0
+
 ## [3.3.0] - 2026-02-09
 
 ### Added
 - **Comprehensive handler unit tests** ([#72](https://github.com/tugudush/bitbucket-mcp/issues/72), [PR #80](https://github.com/tugudush/bitbucket-mcp/pull/80))
   - 8 new test suites covering all handler modules: repository, pullrequest, commit, diff, issue, pipeline, search, workspace
-  - 148 total tests across 11 test suites (up from 64 tests in 3 suites)
+  - 146 total tests across 11 test suites (up from 64 tests in 3 suites)
   - 92.2% statement coverage, 78.5% branch coverage, 97.3% function coverage
   - Mocked `makeRequest`/`makeTextRequest` with thorough edge case testing
 - **`fetchAllPages<T>()` utility** ([#75](https://github.com/tugudush/bitbucket-mcp/issues/75), [PR #82](https://github.com/tugudush/bitbucket-mcp/pull/82))
@@ -33,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated Jest to v30.0.5 and related dependencies to resolve `test-exclude` module incompatibility
   - `jest --coverage` now works correctly with coverage metrics available
 - **Stale jest.setup.js reference** — Removed `BITBUCKET_READ_ONLY` env var from test setup
+- **`bb_get_user` tool** — Fixed to use correct `GET /users/{selected_user}` endpoint instead of throwing an unsupported error
+  - Supports lookup by username or UUID, falls back to `GET /user` for current user
+  - Updated `GetUserSchema` parameter from `username` to `selected_user` to match Bitbucket API
+  - Made `BitbucketUser` fields (`username`, `account_id`, `created_on`) optional for private profiles
+
+### Removed
+- **`bb_list_user_pull_requests` tool** — Removed entirely; the endpoint `GET /pullrequests/{selected_user}` does not exist in Bitbucket Cloud API v2.0
+  - No cross-repository user PR listing endpoint exists; use `bb_get_pull_requests` per repository instead
+  - Removed handler, schema, tool definition, registry entry, and tests
 
 ## [3.2.2] - 2026-02-08
 
@@ -121,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Workspace and user tools**: Extended `src/handlers/workspace.ts` with user-facing tools
   - `bb_get_user` — Get information about a specific Bitbucket user
   - `bb_get_current_user` — Get details of the currently authenticated user
-  - `bb_list_user_pull_requests` — List pull requests for a specific user across repositories
+  - ~~`bb_list_user_pull_requests`~~ — *(Removed in v3.3.0: endpoint does not exist in Bitbucket API v2.0)*
 
 - **Comprehensive TypeScript interfaces** in `src/types.ts` for strong typing
   - `BitbucketCommitDetailed` — Detailed commit with parents and repository info
@@ -146,11 +165,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Handler registry**: Updated `src/handlers/index.ts` with 38 total registered tools (up from previous count)
+- **Handler registry**: Updated `src/handlers/index.ts` with 37 total registered tools
   - Tools organized by domain: repository, pull request, diff, commit, issue, workspace/user, search, pipeline
 - **Tool definitions**: Updated `src/tools.ts` with definitions for all new tools
 - **Documentation**: Updated `README.md`, `.github/copilot-instructions.md`, and `docs/reviews/codebase-review.md` to reflect new architecture and tools
-- **Tool count**: Expanded from ~24 tools to **38 tools** total, with 31 verified via automated tests (100% pass rate on testable tools)
+- **Tool count**: Expanded from ~24 tools to **37 tools** total, with 31 verified via automated tests (100% pass rate on testable tools)
 
 ## [2.0.1] - 2026-01-26
 
