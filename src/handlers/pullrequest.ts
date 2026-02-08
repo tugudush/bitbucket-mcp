@@ -12,7 +12,12 @@ import {
   GetPullRequestCommitsSchema,
   GetPullRequestStatusesSchema,
 } from '../schemas.js';
-import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
+import {
+  makeRequest,
+  buildApiUrl,
+  addQueryParams,
+  fetchAllPages,
+} from '../api.js';
 import type {
   BitbucketApiResponse,
   BitbucketPullRequest,
@@ -176,22 +181,21 @@ export async function handleGetCommentThread(
   );
   const rootComment = await makeRequest<BitbucketComment>(rootUrl);
 
-  // Then get all comments to find replies
+  // Then get all comments to find replies (fetch all pages to avoid missing replies)
   const allCommentsUrl = addQueryParams(
     buildApiUrl(
       `/repositories/${parsed.workspace}/${parsed.repo_slug}/pullrequests/${parsed.pull_request_id}/comments`
     ),
     { pagelen: 100 }
   );
-  const allComments =
-    await makeRequest<BitbucketApiResponse<BitbucketComment>>(allCommentsUrl);
+  const allCommentsList = await fetchAllPages<BitbucketComment>(allCommentsUrl);
 
   // Build the thread by finding all replies (direct and nested)
   const findReplies = (
     parentId: number,
     depth: number = 0
   ): BitbucketComment[] => {
-    const directReplies = allComments.values.filter(
+    const directReplies = allCommentsList.filter(
       c => c.parent?.id === parentId
     );
     const allReplies: BitbucketComment[] = [];
@@ -203,10 +207,27 @@ export async function handleGetCommentThread(
     return allReplies;
   };
 
+  // Calculate depth by walking up parent chain
+  const calculateDepth = (
+    comment: BitbucketComment,
+    allComments: BitbucketComment[]
+  ): number => {
+    let depth = 1; // Start at 1 for direct replies to root
+    let current = comment;
+    while (current.parent && current.parent.id !== parsed.comment_id) {
+      const parent = allComments.find(c => c.id === current.parent?.id);
+      if (!parent) break;
+      current = parent;
+      depth++;
+    }
+    return depth;
+  };
+
   const replies = findReplies(parsed.comment_id);
 
-  // Format the root comment
-  const formatComment = (comment: BitbucketComment, indent: string = '') => {
+  // Format the root comment with optional indentation based on depth
+  const formatComment = (comment: BitbucketComment, depth: number = 0) => {
+    const indent = '  '.repeat(depth);
     let text =
       `${indent}📝 Comment #${comment.id}\n` +
       `${indent}Author: ${comment.user.display_name}\n` +
@@ -229,12 +250,14 @@ export async function handleGetCommentThread(
 
   let response = `Comment Thread for #${parsed.comment_id} on PR #${parsed.pull_request_id}:\n\n`;
   response += `=== ROOT COMMENT ===\n`;
-  response += formatComment(rootComment);
+  response += formatComment(rootComment, 0);
 
   if (replies.length > 0) {
     response += `\n=== REPLIES (${replies.length}) ===\n`;
     for (const reply of replies) {
-      response += `\n` + formatComment(reply, '  ');
+      // Calculate depth of this reply to show nesting visually
+      const replyDepth = calculateDepth(reply, allCommentsList);
+      response += `\n` + formatComment(reply, replyDepth);
     }
   } else {
     response += `\nNo replies to this comment.`;
