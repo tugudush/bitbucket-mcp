@@ -38,6 +38,18 @@ export default [
     },
   },
   {
-    ignores: ['build/', 'node_modules/', '*.js'],
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+      },
+    },
+  },
+  {
+    ignores: ['build/', 'node_modules/'],
   },
 ];
