@@ -7,7 +7,7 @@ import { API_CONSTANTS } from './schemas.js';
  */
 
 // Package version - kept in sync with package.json
-export const VERSION = '3.0.0';
+export const VERSION = '3.1.0';
 
 // Get config dynamically to handle environment changes
 function getConfig() {

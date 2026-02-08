@@ -1,6 +1,6 @@
 {
   "name": "@tugudush/bitbucket-mcp",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "A Model Context Protocol server for Bitbucket with read-only operations",
   "type": "module",
   "main": "build/index.js",
