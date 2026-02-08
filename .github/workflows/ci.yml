@@ -38,7 +38,7 @@ jobs:
         run: npm run typecheck
 
       - name: Format Check
-        run: npm run format
+        run: npx prettier --check src/**/*.ts
 
       - name: Build
         run: npm run build
