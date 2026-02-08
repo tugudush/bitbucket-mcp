@@ -1,8 +1,8 @@
 # Bitbucket MCP Tools — Test Results
 
 **Date:** February 9, 2026
-**Repositories:** `oceantg/otg-content-manager-ui`, `oceantg/otg-common-components-ui`
-**PR Tested:** [PR #101 — build package page (no build button yet)](https://bitbucket.org/oceantg/otg-content-manager-ui/pull-requests/101)
+**Repositories:** `workspace/repository-name` (private repositories)
+**PR Tested:** PR #101 (merged)
 
 ---
 
@@ -24,10 +24,10 @@
 
 | #   | Tool                  | Status  | Notes                               |
 | --- | --------------------- | ------- | ----------------------------------- |
-| 1   | `bb_get_current_user` | ✅ PASS | Jerome Gomez (@jeromegomez1)        |
+| 1   | `bb_get_current_user` | ✅ PASS | Current user details retrieved      |
 | 2   | `bb_get_user`         | ✅ FIXED | Now uses `GET /users/{selected_user}` endpoint. Supports username or UUID lookup. |
-| 3   | `bb_get_workspace`    | ✅ PASS | OceanTG workspace, UUID returned    |
-| 4   | `bb_list_workspaces`  | ✅ PASS | 1 workspace (oceantg)               |
+| 3   | `bb_get_workspace`    | ✅ PASS | Workspace details with UUID returned |
+| 4   | `bb_list_workspaces`  | ✅ PASS | Accessible workspace(s) listed      |
 
 ### Repository & Browsing
 
@@ -50,7 +50,7 @@
 | 14  | `bb_get_commit`          | ✅ PASS | Commit `7975fba6` details retrieved                                        |
 | 15  | `bb_get_commit_statuses` | ✅ PASS | Jenkins build #310 SUCCESSFUL                                              |
 | 16  | `bb_get_tags`            | ✅ PASS | No tags (expected for this repo)                                           |
-| 17  | `bb_get_tag`             | ✅ PASS | Tag `v2.2.1` from `otg-common-components-ui` (141 tags, commit `e4d19115`) |
+| 17  | `bb_get_tag`             | ✅ PASS | Tag details with target commit retrieved |
 | 18  | `bb_get_merge_base`      | ✅ PASS | `main..develop` ancestor: `530118c5`                                       |
 
 ### Pull Requests
@@ -71,8 +71,8 @@
 | #   | Tool                           | Status  | Notes                                           |
 | --- | ------------------------------ | ------- | ----------------------------------------------- |
 | 27  | `bb_get_pull_request_comments` | ✅ PASS | 28 comments across 3 pages (paginated)          |
-| 28  | `bb_get_pull_request_comment`  | ✅ PASS | Retrieved comment #746913012 by Zakikhan Pathan |
-| 29  | `bb_get_comment_thread`        | ✅ PASS | Thread with root + 1 reply by Micko Magallanes  |
+| 28  | `bb_get_pull_request_comment`  | ✅ PASS | Retrieved comment by ID successfully |
+| 29  | `bb_get_comment_thread`        | ✅ PASS | Thread with root + nested replies retrieved |
 
 ### Diffs & File History
 
@@ -109,7 +109,4 @@
 
 ### Comment thread example
 
-Tested with [comment #746913012](https://bitbucket.org/oceantg/otg-content-manager-ui/pull-requests/101#comment-746913012):
-
-> **Zakikhan Pathan**: "When the length is 0 we need to shows something in UI? Same for addCourse"
-> **Micko Magallanes** (reply): "no we do not need UI for this, the section won't just show when the user does not selected anything of that"
+Successfully tested comment threads with nested replies. The tool correctly retrieves root comments along with all nested reply chains, properly calculating depth for visual formatting.
