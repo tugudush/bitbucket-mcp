@@ -8,7 +8,6 @@ import {
   handleGetWorkspace,
   handleGetUser,
   handleGetCurrentUser,
-  handleListUserPullRequests,
 } from '../../handlers/workspace.js';
 
 // Mock the API module
@@ -85,18 +84,34 @@ describe('Workspace Handlers', () => {
   });
 
   describe('handleGetUser', () => {
-    it('should throw error when username is provided', async () => {
-      await expect(handleGetUser({ username: 'alice' })).rejects.toThrow(
-        'not supported by Bitbucket API'
+    it('should fetch user by username/UUID using /users/{selected_user}', async () => {
+      const mockUser = {
+        uuid: '{user-456}',
+        display_name: 'Alice',
+        username: 'alice',
+        account_id: 'account456',
+        type: 'user',
+        created_on: '2024-01-01T00:00:00Z',
+      };
+
+      mockMakeRequest.mockResolvedValueOnce(mockUser);
+
+      const result = await handleGetUser({ selected_user: 'alice' });
+
+      expect(result.content[0].text).toContain('Alice');
+      expect(result.content[0].text).toContain('@alice');
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        expect.stringContaining('/users/alice')
       );
     });
 
-    it('should fetch current user when no username provided', async () => {
+    it('should fetch current user when no selected_user provided', async () => {
       const mockUser = {
         uuid: '{user-123}',
         display_name: 'Alice',
-        nickname: 'alice',
+        username: 'alice',
         account_id: 'account123',
+        type: 'user',
         created_on: '2024-01-01T00:00:00Z',
       };
 
@@ -105,6 +120,24 @@ describe('Workspace Handlers', () => {
       const result = await handleGetUser({});
 
       expect(result.content[0].text).toContain('Alice');
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        expect.stringContaining('/2.0/user')
+      );
+    });
+
+    it('should handle private profile with limited fields', async () => {
+      const mockUser = {
+        uuid: '{user-789}',
+        display_name: 'Private User',
+        type: 'user',
+      };
+
+      mockMakeRequest.mockResolvedValueOnce(mockUser);
+
+      const result = await handleGetUser({ selected_user: '{user-789}' });
+
+      expect(result.content[0].text).toContain('Private User');
+      expect(result.content[0].text).toContain('Not available');
     });
   });
 
@@ -124,75 +157,6 @@ describe('Workspace Handlers', () => {
 
       expect(result.content[0].text).toContain('Alice');
       expect(result.isError).toBeFalsy();
-    });
-  });
-
-  describe('handleListUserPullRequests', () => {
-    it('should list user PRs with state filtering', async () => {
-      const mockResponse = {
-        values: [
-          {
-            id: 1,
-            title: 'PR 1',
-            state: 'OPEN',
-            author: { display_name: 'Alice' },
-            source: { branch: { name: 'feature' } },
-            destination: {
-              repository: { full_name: 'workspace/repo1' },
-              branch: { name: 'main' },
-            },
-            created_on: '2024-01-01T00:00:00Z',
-          },
-          {
-            id: 2,
-            title: 'PR 2',
-            state: 'MERGED',
-            author: { display_name: 'Alice' },
-            source: { branch: { name: 'hotfix' } },
-            destination: {
-              repository: { full_name: 'workspace/repo2' },
-              branch: { name: 'develop' },
-            },
-            created_on: '2024-01-02T00:00:00Z',
-          },
-        ],
-      };
-
-      mockMakeRequest.mockResolvedValueOnce(mockResponse);
-
-      const result = await handleListUserPullRequests({
-        selected_user: 'alice',
-        state: 'OPEN',
-      });
-
-      expect(result.content[0].text).toContain('PR 1');
-      expect(result.content[0].text).toContain('feature → main');
-      expect(result.content[0].text).toContain('OPEN');
-    });
-
-    it('should handle empty PR list', async () => {
-      const mockResponse = { values: [] };
-
-      mockMakeRequest.mockResolvedValueOnce(mockResponse);
-
-      const result = await handleListUserPullRequests({
-        selected_user: 'alice',
-      });
-
-      expect(result.content[0].text).toContain('No pull requests');
-    });
-
-    it('should encode username', async () => {
-      const mockResponse = { values: [] };
-
-      mockMakeRequest.mockResolvedValueOnce(mockResponse);
-
-      await handleListUserPullRequests({
-        selected_user: 'user-with-dash',
-      });
-
-      // Verify request was made (username encoding happens internally)
-      expect(mockMakeRequest).toHaveBeenCalled();
     });
   });
 });

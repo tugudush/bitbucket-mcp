@@ -7,14 +7,12 @@ import {
   GetWorkspaceSchema,
   GetUserSchema,
   GetCurrentUserSchema,
-  ListUserPullRequestsSchema,
 } from '../schemas.js';
 import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
 import type {
   BitbucketApiResponse,
   BitbucketWorkspace,
   BitbucketUser,
-  BitbucketPullRequest,
 } from '../types.js';
 import { createResponse, ToolResponse } from './types.js';
 
@@ -68,24 +66,21 @@ export async function handleGetWorkspace(args: unknown): Promise<ToolResponse> {
 export async function handleGetUser(args: unknown): Promise<ToolResponse> {
   const parsed = GetUserSchema.parse(args);
 
-  // Bitbucket API v2.0 only supports getting current user info
-  // The /users/{username} endpoint doesn't exist
-  if (parsed.username) {
-    throw new Error(
-      `Getting user info by username is not supported by Bitbucket API v2.0. Use bb_get_current_user for current user or bb_get_workspace for workspace info.`
-    );
-  }
-
-  const url = buildApiUrl('/user');
+  // Use /users/{selected_user} when a username/UUID is provided,
+  // otherwise fall back to /user (current authenticated user)
+  const url = parsed.selected_user
+    ? buildApiUrl(`/users/${encodeURIComponent(parsed.selected_user)}`)
+    : buildApiUrl('/user');
   const data = await makeRequest<BitbucketUser>(url);
 
   return createResponse(
-    `User: ${data.display_name} (@${data.username})\n` +
-      `Account ID: ${data.account_id}\n` +
+    `User: ${data.display_name}${data.username ? ` (@${data.username})` : ''}\n` +
+      `UUID: ${data.uuid || 'Not available'}\n` +
+      `Account ID: ${data.account_id || 'Not available'}\n` +
       `Type: ${data.type}\n` +
       `Website: ${data.website || 'None'}\n` +
       `Location: ${data.location || 'Not specified'}\n` +
-      `Created: ${data.created_on}`
+      `Created: ${data.created_on || 'Not available'}`
   );
 }
 
@@ -102,53 +97,11 @@ export async function handleGetCurrentUser(
   const data = await makeRequest<BitbucketUser>(url);
 
   return createResponse(
-    `Current User: ${data.display_name} (@${data.username})\n` +
-      `Account ID: ${data.account_id}\n` +
+    `Current User: ${data.display_name}${data.username ? ` (@${data.username})` : ''}\n` +
+      `Account ID: ${data.account_id || 'Not available'}\n` +
       `Type: ${data.type}\n` +
       `Website: ${data.website || 'None'}\n` +
       `Location: ${data.location || 'Not specified'}\n` +
-      `Created: ${data.created_on}`
-  );
-}
-
-/**
- * List all pull requests where a user is author or reviewer across all repos
- */
-export async function handleListUserPullRequests(
-  args: unknown
-): Promise<ToolResponse> {
-  const parsed = ListUserPullRequestsSchema.parse(args);
-  const params: Record<string, unknown> = {
-    page: parsed.page,
-    pagelen: parsed.pagelen,
-  };
-  if (parsed.state) params.state = parsed.state;
-
-  const url = addQueryParams(
-    buildApiUrl(`/pullrequests/${encodeURIComponent(parsed.selected_user)}`),
-    params
-  );
-  const data =
-    await makeRequest<BitbucketApiResponse<BitbucketPullRequest>>(url);
-
-  if (!data.values || data.values.length === 0) {
-    return createResponse(
-      `No pull requests found for user ${parsed.selected_user}${parsed.state ? ` with state ${parsed.state}` : ''}.`
-    );
-  }
-
-  const prList = data.values
-    .map(
-      (pr: BitbucketPullRequest) =>
-        `- #${pr.id}: ${pr.title}\n` +
-        `  Author: ${pr.author.display_name}\n` +
-        `  State: ${pr.state}\n` +
-        `  Created: ${pr.created_on}\n` +
-        `  Source: ${pr.source.branch.name} → ${pr.destination.branch.name}`
-    )
-    .join('\n\n');
-
-  return createResponse(
-    `Pull requests for user ${parsed.selected_user}${parsed.state ? ` (${parsed.state})` : ''} (${data.size} total):\n\n${prList}`
+      `Created: ${data.created_on || 'Not available'}`
   );
 }

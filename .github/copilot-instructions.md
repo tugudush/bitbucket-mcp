@@ -39,7 +39,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
   bb_get_repository: handleGetRepository,
   bb_list_repositories: handleListRepositories,
   bb_get_pull_requests: handleGetPullRequests,
-  // ... 38 total tools organized by domain
+  // ... 37 total tools organized by domain
 };
 
 // src/tools.ts - Clean lookup pattern
@@ -60,7 +60,7 @@ export async function handleToolCall(request: CallToolRequest) {
 - `src/handlers/issue.ts` - Issue operations
 - `src/handlers/pipeline.ts` - Pipeline operations
 
-### Working Tools (38 total, 31 testable)
+### Working Tools (37 total, 31 testable)
 - **`bb_list_workspaces`** - Workspace discovery and exploration
 - **`bb_browse_repository`** - Repository structure navigation
 - **`bb_get_file_content`** - Line-based pagination (1-10,000 lines)
@@ -68,7 +68,7 @@ export async function handleToolCall(request: CallToolRequest) {
 - **`bb_get_pull_request_comment`** - Get a single PR comment by ID
 - **`bb_get_comment_thread`** - Get comment thread with nested replies (fetches all pages)
 
-**Test Coverage:** 148 unit tests across 11 suites (92.2% statements), plus 31/38 integration tests verified
+**Test Coverage:** 146 unit tests across 11 suites (92.2% statements), plus 31/37 integration tests verified
 
 ## Critical Development Workflow
 
@@ -210,7 +210,7 @@ bb_get_merge_base({ revspec: 'a..b' })    // NOT spec
 ### Comprehensive Testing (2026-02)
 - **148 unit tests across 11 suites**: All 8 handler modules + api, config, errors
 - **92.2% statement coverage**: `jest --coverage` fully operational (Jest 30)
-- **31/38 integration tools verified**: 100% success on testable tools
+- **31/37 integration tools verified**: 100% success on testable tools
 - **Real-world validation**: Using actual production scenarios
 - **Dynamic ID extraction**: Pattern for extracting IDs from responses
 - **Discovery-based approach**: Sequential workspace → repo → PR → issue testing
@@ -329,7 +329,7 @@ const prId = match ? parseInt(match[1]) : null;
 
 ### Test Coverage
 - **148 unit tests across 11 suites** (92.2% statement coverage)
-- **31 out of 38 integration tools verified** (100% success on testable tools)
+- **31 out of 37 integration tools verified** (100% success on testable tools)
 - Handler tests mock `makeRequest`/`makeTextRequest` and verify formatting, errors, pagination
 - Some tools require specific repository features (issue trackers, CI/CD pipelines)
 

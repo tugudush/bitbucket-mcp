@@ -46,7 +46,6 @@ import {
   SearchRepositoriesSchema,
   SearchCodeSchema,
   GetWorkspaceSchema,
-  ListUserPullRequestsSchema,
 } from './schemas.js';
 import { toolHandlers } from './handlers/index.js';
 
@@ -265,7 +264,7 @@ export function getToolDefinitions(): Tool[] {
     {
       name: 'bb_get_user',
       description:
-        'Get information about a Bitbucket user. If no username is provided, returns information about the authenticated user.',
+        'Get public information about a Bitbucket user by username or UUID. If no user is specified, returns the authenticated user. Note: private profiles may have limited fields.',
       inputSchema: zodToJsonSchema(GetUserSchema) as Tool['inputSchema'],
     },
     {
@@ -291,14 +290,6 @@ export function getToolDefinitions(): Tool[] {
       name: 'bb_get_workspace',
       description: 'Get information about a workspace',
       inputSchema: zodToJsonSchema(GetWorkspaceSchema) as Tool['inputSchema'],
-    },
-    {
-      name: 'bb_list_user_pull_requests',
-      description:
-        'List all pull requests where a user is the author or a reviewer, across all repositories. Useful for seeing all open PRs assigned to you.',
-      inputSchema: zodToJsonSchema(
-        ListUserPullRequestsSchema
-      ) as Tool['inputSchema'],
     },
   ];
 }

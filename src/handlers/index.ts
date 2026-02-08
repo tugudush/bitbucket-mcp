@@ -55,7 +55,6 @@ export {
   handleGetWorkspace,
   handleGetUser,
   handleGetCurrentUser,
-  handleListUserPullRequests,
 } from './workspace.js';
 
 // Search handlers
@@ -110,7 +109,6 @@ import {
   handleGetWorkspace,
   handleGetUser,
   handleGetCurrentUser,
-  handleListUserPullRequests,
 } from './workspace.js';
 import { handleSearchRepositories, handleSearchCode } from './search.js';
 import {
@@ -167,8 +165,6 @@ export const toolHandlers: Record<string, ToolHandler> = {
   bb_get_workspace: handleGetWorkspace,
   bb_get_user: handleGetUser,
   bb_get_current_user: handleGetCurrentUser,
-
-  bb_list_user_pull_requests: handleListUserPullRequests,
 
   // Search tools
   bb_search_repositories: handleSearchRepositories,
