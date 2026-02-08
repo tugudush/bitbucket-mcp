@@ -21,7 +21,10 @@
     "format": "prettier --write src/**/*.ts",
     "lf": "npm run lint && npm run format",
     "ltf": "npm run lint && npm run format && npm run typecheck",
-    "ltfb": "npm run lint && npm run typecheck && npm run format && npm run build"
+    "ltfb": "npm run lint && npm run typecheck && npm run format && npm run build",
+    "vi:major": "node scripts/version-increment.js major",
+    "vi:minor": "node scripts/version-increment.js minor",
+    "vi:patch": "node scripts/version-increment.js patch"
   },
   "keywords": [
     "mcp",

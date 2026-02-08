@@ -19,8 +19,8 @@ import {
   makeRequest,
   makeTextRequest,
   BITBUCKET_API_BASE,
-  VERSION,
 } from '../api.js';
+import { VERSION } from '../version.js';
 import { BitbucketApiError, AuthenticationError } from '../errors.js';
 
 // Mock the config module
