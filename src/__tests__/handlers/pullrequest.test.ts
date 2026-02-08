@@ -27,11 +27,15 @@ jest.mock('../../api.js', () => ({
     });
     return urlObj.toString();
   }),
+  fetchAllPages: jest.fn(),
 }));
 
-import { makeRequest } from '../../api.js';
+import { makeRequest, fetchAllPages } from '../../api.js';
 
 const mockMakeRequest = makeRequest as jest.MockedFunction<typeof makeRequest>;
+const mockFetchAllPages = fetchAllPages as jest.MockedFunction<
+  typeof fetchAllPages
+>;
 
 describe('Pull Request Handlers', () => {
   beforeEach(() => {
@@ -199,34 +203,31 @@ describe('Pull Request Handlers', () => {
         created_on: '2024-01-01T00:00:00Z',
       };
 
-      const mockAllComments = {
-        values: [
-          {
-            id: 1,
-            content: { raw: 'Root comment' },
-            user: { display_name: 'Alice' },
-            created_on: '2024-01-01T00:00:00Z',
-          },
-          {
-            id: 2,
-            content: { raw: 'Reply 1' },
-            user: { display_name: 'Bob' },
-            created_on: '2024-01-02T00:00:00Z',
-            parent: { id: 1 },
-          },
-          {
-            id: 3,
-            content: { raw: 'Reply 2' },
-            user: { display_name: 'Charlie' },
-            created_on: '2024-01-03T00:00:00Z',
-            parent: { id: 1 },
-          },
-        ],
-      };
+      const mockAllComments = [
+        {
+          id: 1,
+          content: { raw: 'Root comment' },
+          user: { display_name: 'Alice' },
+          created_on: '2024-01-01T00:00:00Z',
+        },
+        {
+          id: 2,
+          content: { raw: 'Reply 1' },
+          user: { display_name: 'Bob' },
+          created_on: '2024-01-02T00:00:00Z',
+          parent: { id: 1 },
+        },
+        {
+          id: 3,
+          content: { raw: 'Reply 2' },
+          user: { display_name: 'Charlie' },
+          created_on: '2024-01-03T00:00:00Z',
+          parent: { id: 1 },
+        },
+      ];
 
-      mockMakeRequest
-        .mockResolvedValueOnce(mockRoot)
-        .mockResolvedValueOnce(mockAllComments);
+      mockMakeRequest.mockResolvedValueOnce(mockRoot);
+      mockFetchAllPages.mockResolvedValueOnce(mockAllComments);
 
       const result = await handleGetCommentThread({
         workspace: 'workspace',
@@ -239,6 +240,69 @@ describe('Pull Request Handlers', () => {
       expect(result.content[0].text).toContain('Reply 1');
       expect(result.content[0].text).toContain('Reply 2');
       expect(result.content[0].text).toContain('=== REPLIES (2) ===');
+    });
+
+    it('should handle multi-level nested replies with proper indentation', async () => {
+      const mockRoot = {
+        id: 1,
+        content: { raw: 'Root comment' },
+        user: { display_name: 'Alice' },
+        created_on: '2024-01-01T00:00:00Z',
+      };
+
+      const mockAllComments = [
+        {
+          id: 1,
+          content: { raw: 'Root comment' },
+          user: { display_name: 'Alice' },
+          created_on: '2024-01-01T00:00:00Z',
+        },
+        {
+          id: 2,
+          content: { raw: 'Level 1 reply' },
+          user: { display_name: 'Bob' },
+          created_on: '2024-01-02T00:00:00Z',
+          parent: { id: 1 },
+        },
+        {
+          id: 3,
+          content: { raw: 'Level 2 reply' },
+          user: { display_name: 'Charlie' },
+          created_on: '2024-01-03T00:00:00Z',
+          parent: { id: 2 },
+        },
+        {
+          id: 4,
+          content: { raw: 'Level 3 reply' },
+          user: { display_name: 'Dave' },
+          created_on: '2024-01-04T00:00:00Z',
+          parent: { id: 3 },
+        },
+      ];
+
+      mockMakeRequest.mockResolvedValueOnce(mockRoot);
+      mockFetchAllPages.mockResolvedValueOnce(mockAllComments);
+
+      const result = await handleGetCommentThread({
+        workspace: 'workspace',
+        repo_slug: 'repo',
+        pull_request_id: 1,
+        comment_id: 1,
+      });
+
+      expect(result.content[0].text).toContain('Root comment');
+      expect(result.content[0].text).toContain('Level 1 reply');
+      expect(result.content[0].text).toContain('Level 2 reply');
+      expect(result.content[0].text).toContain('Level 3 reply');
+      expect(result.content[0].text).toContain('=== REPLIES (3) ===');
+      // Verify increasing indentation for nested replies
+      const text = result.content[0].text;
+      const level1Index = text.indexOf('Level 1 reply');
+      const level2Index = text.indexOf('Level 2 reply');
+      const level3Index = text.indexOf('Level 3 reply');
+      expect(level1Index).toBeGreaterThan(0);
+      expect(level2Index).toBeGreaterThan(level1Index);
+      expect(level3Index).toBeGreaterThan(level2Index);
     });
   });
 
