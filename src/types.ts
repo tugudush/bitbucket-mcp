@@ -4,12 +4,13 @@
 
 export interface BitbucketUser {
   display_name: string;
-  username: string;
-  account_id: string;
+  username?: string;
+  account_id?: string;
+  uuid?: string;
   type: string;
   website?: string;
   location?: string;
-  created_on: string;
+  created_on?: string;
 }
 
 export interface BitbucketRepository {

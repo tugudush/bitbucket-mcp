@@ -202,11 +202,11 @@ export const ListWorkspacesSchema = z.object({
 });
 
 export const GetUserSchema = z.object({
-  username: z
+  selected_user: z
     .string()
     .optional()
     .describe(
-      'The username to get information about. Note: Bitbucket API v2.0 only supports current user. Use bb_get_current_user instead.'
+      'The username or UUID of the user to look up. If omitted, returns information about the authenticated user. Note: some fields may be omitted for private profiles.'
     ),
 });
 
@@ -437,23 +437,6 @@ export const GetPipelineStepLogSchema = z.object({
   step_uuid: z
     .string()
     .describe('The step UUID (with or without curly braces)'),
-});
-
-export const ListUserPullRequestsSchema = z.object({
-  selected_user: z
-    .string()
-    .describe(
-      "The username or UUID of the user to list PRs for. Use the authenticated user's username to see your own PRs."
-    ),
-  state: z
-    .enum(['OPEN', 'MERGED', 'DECLINED', 'SUPERSEDED'])
-    .optional()
-    .describe('Filter by pull request state'),
-  page: z.number().optional().describe('Page number for pagination'),
-  pagelen: z
-    .number()
-    .optional()
-    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
 
 export const SearchCodeSchema = z.object({
