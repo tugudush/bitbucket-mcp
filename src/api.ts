@@ -2,6 +2,7 @@ import { loadConfig, Config } from './config.js';
 import { createApiError } from './errors.js';
 import { API_CONSTANTS } from './schemas.js';
 import { VERSION } from './version.js';
+import { BitbucketApiResponse } from './types.js';
 
 /**
  * Bitbucket API configuration and request handling
@@ -174,6 +175,38 @@ export async function makeRequest<T = unknown>(
     lastError ||
     new Error(`Request failed after ${API_CONSTANTS.RETRY_ATTEMPTS} attempts`)
   );
+}
+
+/**
+ * Fetch all pages of results by following the `next` link until exhausted.
+ * Useful for endpoints that paginate with large result sets.
+ * @param initialUrl - The initial URL to start fetching from (should already include query params)
+ * @param maxPages - Safety limit to prevent infinite loops (default: 50 pages, ~5000 items)
+ * @returns Array of all accumulated values across all pages
+ */
+export async function fetchAllPages<T>(
+  initialUrl: string,
+  maxPages: number = 50
+): Promise<T[]> {
+  const allValues: T[] = [];
+  let currentUrl: string | undefined = initialUrl;
+  let pageCount = 0;
+
+  while (currentUrl && pageCount < maxPages) {
+    const response: BitbucketApiResponse<T> =
+      await makeRequest<BitbucketApiResponse<T>>(currentUrl);
+    allValues.push(...response.values);
+    currentUrl = response.next;
+    pageCount++;
+  }
+
+  if (currentUrl && pageCount >= maxPages) {
+    console.warn(
+      `fetchAllPages: Reached max page limit (${maxPages}). Some results may be truncated.`
+    );
+  }
+
+  return allValues;
 }
 
 /**

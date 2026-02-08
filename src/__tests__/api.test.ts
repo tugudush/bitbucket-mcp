@@ -18,6 +18,7 @@ import {
   buildRequestHeaders,
   makeRequest,
   makeTextRequest,
+  fetchAllPages,
   BITBUCKET_API_BASE,
 } from '../api.js';
 import { VERSION } from '../version.js';
@@ -502,6 +503,166 @@ describe('makeRequest', () => {
     const callOptions = mockFetch.mock.calls[0][1];
     expect(callOptions?.signal).toBeDefined();
     expect(callOptions?.signal).toBeInstanceOf(AbortSignal);
+  });
+});
+
+describe('fetchAllPages', () => {
+  const defaultConfig = {
+    BITBUCKET_API_TOKEN: 'test-token',
+    BITBUCKET_EMAIL: 'test@example.com',
+    BITBUCKET_API_BASE: 'https://api.bitbucket.org/2.0',
+    BITBUCKET_REQUEST_TIMEOUT: 30000,
+    BITBUCKET_DEBUG: false,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockLoadConfig.mockReturnValue(defaultConfig);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('should fetch single page when no next link', async () => {
+    const mockResponse = {
+      values: [{ id: 1 }, { id: 2 }],
+      size: 2,
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const promise = fetchAllPages<{ id: number }>(
+      'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments'
+    );
+    jest.runAllTimers();
+    const result = await promise;
+
+    expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('should fetch multiple pages and accumulate results', async () => {
+    const firstPage = {
+      values: [{ id: 1 }, { id: 2 }],
+      size: 2,
+      next: 'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments?page=2',
+    };
+
+    const secondPage = {
+      values: [{ id: 3 }, { id: 4 }],
+      size: 2,
+      next: 'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments?page=3',
+    };
+
+    const thirdPage = {
+      values: [{ id: 5 }],
+      size: 1,
+    };
+
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => firstPage,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => secondPage,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => thirdPage,
+      } as Response);
+
+    const promise = fetchAllPages<{ id: number }>(
+      'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments'
+    );
+    jest.runAllTimers();
+    const result = await promise;
+
+    expect(result).toEqual([
+      { id: 1 },
+      { id: 2 },
+      { id: 3 },
+      { id: 4 },
+      { id: 5 },
+    ]);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('should respect maxPages limit and warn', async () => {
+    const consoleWarnSpy = jest
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {});
+
+    const mockPage = {
+      values: [{ id: 1 }],
+      size: 1,
+      next: 'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments?page=2',
+    };
+
+    // Mock fetch to always return a page with next link
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockPage,
+    } as Response);
+
+    const promise = fetchAllPages<{ id: number }>(
+      'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments',
+      2 // maxPages = 2
+    );
+    jest.runAllTimers();
+    const result = await promise;
+
+    // Should stop after 2 pages despite having more
+    expect(result).toEqual([{ id: 1 }, { id: 1 }]);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Reached max page limit (2)')
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('should handle empty pages', async () => {
+    const mockResponse = {
+      values: [],
+      size: 0,
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    } as Response);
+
+    const promise = fetchAllPages<{ id: number }>(
+      'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments'
+    );
+    jest.runAllTimers();
+    const result = await promise;
+
+    expect(result).toEqual([]);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('should propagate errors from makeRequest', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: async () => JSON.stringify({ message: 'Repository not found' }),
+    } as Response);
+
+    const promise = fetchAllPages<{ id: number }>(
+      'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/1/comments'
+    );
+    jest.runAllTimers();
+
+    await expect(promise).rejects.toThrow();
   });
 });
 
