@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol server providing 38 tools for interacting with the Bitbucket Cloud API v2.0. The codebase demonstrates strong architectural decisions: modular handler registry, strict TypeScript typing, Zod-based input validation, and defense-in-depth read-only enforcement. All 148 unit tests pass across 11 suites with 92.2% statement coverage, lint and type checks are clean. Remaining areas for improvement include reducing code duplication in the API layer and minor schema/config cleanup.
+The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol server providing 37 tools for interacting with the Bitbucket Cloud API v2.0. The codebase demonstrates strong architectural decisions: modular handler registry, strict TypeScript typing, Zod-based input validation, and defense-in-depth read-only enforcement. All 146 unit tests pass across 11 suites with 92.2% statement coverage, lint and type checks are clean. Remaining areas for improvement include reducing code duplication in the API layer and minor schema/config cleanup.
 
 **Overall Rating: Strong** — Production-quality architecture with comprehensive test coverage and good separation of concerns.
 
@@ -24,8 +24,8 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 | Lines of code (src/*.ts) | 1,805 |
 | Lines of code (handlers/) | ~2,000 |
 | Lines of test code | ~3,600 |
-| Total tools | 38 |
-| Unit tests | 148 (all passing) |
+| Total tools | 37 |
+| Unit tests | 146 (all passing) |
 | Test suites | 11 (api, config, errors + 8 handlers) |
 | Statement coverage | 92.2% |
 | Lint status | Clean |
@@ -44,7 +44,7 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 - **Clean layered architecture**:
   - `index.ts` — MCP server bootstrap (60 lines, minimal)
   - `tools.ts` — Tool definitions + handler dispatch
-  - `schemas.ts` — Zod schemas for all 38 tools
+  - `schemas.ts` — Zod schemas for all 37 tools
   - `types.ts` — TypeScript interfaces for API responses
   - `api.ts` — HTTP layer with retry, timeout, auth
   - `errors.ts` — Domain-specific error hierarchy
@@ -78,7 +78,7 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 │    ├── diff.ts        (4 tools)                     │
 │    ├── commit.ts      (4 tools)                     │
 │    ├── pipeline.ts    (4 tools)                     │
-│    ├── workspace.ts   (5 tools)                     │
+│    └── workspace.ts   (4 tools)                     │
 │    ├── search.ts      (2 tools)                     │
 │    └── issue.ts       (2 tools)                     │
 ├─────────────────────────────────────────────────────┤
@@ -128,7 +128,7 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 
 ### 5.1 Current State
 
-- **11 test suites** covering `api.ts`, `config.ts`, `errors.ts`, and all 8 handler modules — 148 tests, all passing.
+- **11 test suites** covering `api.ts`, `config.ts`, `errors.ts`, and all 8 handler modules — 146 tests, all passing.
 - Tests are well-structured with proper mocking (`jest.mock`, `mockFetch`), fake timers for retry/timeout scenarios, and thorough edge case coverage.
 - API tests cover: successful requests, read-only enforcement, auth headers, retry logic (500, 429), timeout/abort, non-JSON error responses, `fetchAllPages()` pagination.
 - Config tests cover: default values, env parsing, email validation, URL validation, auth detection, debug logging.
@@ -182,7 +182,6 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 ### 7.2 Potential Improvements
 
 - **Missing error handling in `handleSearchCode()`**: If code search is not enabled for the account, the raw API error propagates. A specific catch could suggest enabling code search in Bitbucket settings.
-- **`handleGetUser()` throws a plain `Error`** for unsupported username lookups. This could use a custom error type for consistency, though the impact is minimal.
 
 ---
 
@@ -217,7 +216,7 @@ The Bitbucket MCP Server is a well-structured, read-only Model Context Protocol 
 
 ### 9.2 Observations
 
-- **`GetUserSchema`** has a `username` field that's immediately rejected if provided — the schema should arguably not include it, or it should be removed and the tool description updated. Currently it's misleading to MCP clients that see `username` as an accepted parameter.
+- **`GetUserSchema`** uses a `selected_user` field that accepts a username or UUID for user lookup via `GET /users/{selected_user}`. If omitted, falls back to `GET /user` for the current authenticated user.
 - **Pagination schemas** repeat the same `page`/`pagelen` pattern across ~15 schemas. A shared `PaginationSchema` base could reduce repetition, e.g.:
   ```typescript
   const PaginationParams = z.object({
@@ -298,7 +297,7 @@ None.
 | # | Finding | Location | Status |
 |---|---|---|---|
 | L1 | ~~Stale env var in jest.setup.js~~ | `jest.setup.js` L4 | ✅ **Resolved** — [PR #80](https://github.com/tugudush/bitbucket-mcp/pull/80): Removed `BITBUCKET_READ_ONLY` |
-| L2 | `GetUserSchema` has misleading field | `schemas.ts` L204 | Open — Remove `username` field or clarify limitation |
+| L2 | ~~`GetUserSchema` has misleading field~~ | `schemas.ts` L204 | ✅ **Resolved** — Renamed to `selected_user`, now used for `GET /users/{selected_user}` endpoint |
 | L3 | Unused `depth` parameter | `pullrequest.ts` L218 | Open — Remove parameter or use for indent formatting |
 
 ---
@@ -310,10 +309,10 @@ None.
 3. **Refactor API duplication** (M1) — Extract shared request execution logic to reduce maintenance burden.
 4. ~~**Paginate comment thread fetching** (M2)~~ — ✅ **RESOLVED** via PR #82
 5. ~~**Add server-side repo search** (M3)~~ — ✅ **RESOLVED** via PR #81
-6. **Clean up minor issues** (L2-L3) — Quick wins for code hygiene.
+6. **Clean up minor issues** (L3) — Quick win for code hygiene.
 
 ---
 
 ## 14. Conclusion
 
-This is a well-engineered MCP server with clean separation of concerns, strong type safety, and robust error handling. The modular handler registry pattern makes it easy to add new Bitbucket tools. With the addition of comprehensive handler tests (148 tests, 92.2% coverage), working coverage tooling, full comment thread pagination, and server-side repository search, the project has reached excellent quality. Remaining improvements are limited to API layer refactoring (M1), timeout validation (M4), and minor schema cleanup (L2-L3).
+This is a well-engineered MCP server with clean separation of concerns, strong type safety, and robust error handling. The modular handler registry pattern makes it easy to add new Bitbucket tools. With the addition of comprehensive handler tests (146 tests, 92.2% coverage), working coverage tooling, full comment thread pagination, and server-side repository search, the project has reached excellent quality. Remaining improvements are limited to API layer refactoring (M1), timeout validation (M4), and minor cleanup (L3).

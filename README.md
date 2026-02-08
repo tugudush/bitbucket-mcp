@@ -2,7 +2,7 @@
 
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Code.
 
-**🎯 38 tools available** | **✅ 148 unit tests** (92% coverage) | **🏗️ Modular architecture**
+**🎯 37 tools available** | **✅ 146 unit tests** (92% coverage) | **🏗️ Modular architecture**
 
 ## Requirements
 
@@ -188,7 +188,7 @@ Or add to `.mcp.json` (project scope):
 - `bb_get_file_content` - Read files with pagination (1-10,000 lines)
 - `bb_get_file_history` - Get commit history for specific files
 
-### 🔀 Pull Requests (11 tools)
+### 🔀 Pull Requests (10 tools)
 - `bb_get_pull_requests` - List all pull requests
 - `bb_get_pull_request` - Get detailed PR information
 - `bb_get_pull_request_comments` - List all comments on a PR
@@ -199,7 +199,6 @@ Or add to `.mcp.json` (project scope):
 - `bb_get_pull_request_diffstat` - Get per-file change statistics
 - `bb_get_pr_commits` - List commits in a PR
 - `bb_get_pr_statuses` - Get CI/CD build statuses for a PR
-- `bb_list_user_pull_requests` - List all PRs for a user across repositories
 
 ### 🌿 Branches & Commits (8 tools)
 - `bb_get_branches` - List all branches
@@ -229,10 +228,10 @@ Or add to `.mcp.json` (project scope):
 - `bb_search_code` - Advanced code search with language filtering
 
 ### 👤 User Information (2 tools)
-- `bb_get_user` - Get user information
+- `bb_get_user` - Get user information by username or UUID
 - `bb_get_current_user` - Get authenticated user information
 
-**Total: 38 tools across 8 categories**
+**Total: 37 tools across 8 categories**
 
 ## Usage Examples
 
@@ -289,13 +288,13 @@ node build/index.js  # Test server startup
 ### Testing
 The MCP server includes comprehensive test coverage:
 
-**Unit Tests:** 148 tests across 11 test suites (92.2% statement coverage)
+**Unit Tests:** 146 tests across 11 test suites (92.2% statement coverage)
 - All 8 handler modules tested: repository, pullrequest, commit, diff, issue, pipeline, search, workspace
 - Core modules tested: api, config, errors
 - Uses mocked `makeRequest`/`makeTextRequest` with thorough edge case coverage
 - Run `npm test` or `jest --coverage` for full coverage report
 
-**Integration Tests:** 31 out of 38 tools verified (100% success rate on testable tools)
+**Integration Tests:** 31 out of 37 tools verified (100% success rate on testable tools)
 - Uses discovery-based approach with dynamic ID extraction
 - Validates all major Bitbucket operations with real-world scenarios
 
@@ -350,21 +349,23 @@ See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for det
 
 ## Development Status
 
-✅ **Production Ready** - 148 unit tests (92% coverage), 31/38 integration tests verified
+✅ **Production Ready** - 146 unit tests (92% coverage), 31/37 integration tests verified
 
 **Recent Updates (2026-02):**
-- ✅ Comprehensive unit tests for all 8 handler modules (148 tests, 11 suites)
+- ✅ Comprehensive unit tests for all 8 handler modules (146 tests, 11 suites)
 - ✅ Jest coverage tooling fixed — `jest --coverage` fully operational
 - ✅ Repository search uses server-side BBQL filtering (no longer limited to single page)
 - ✅ Comment thread pagination fetches all pages for large PRs via `fetchAllPages()`
-- ✅ 38 tools covering all major Bitbucket operations
+- ✅ Fixed `bb_get_user` to use correct `GET /users/{selected_user}` endpoint
+- ✅ Removed `bb_list_user_pull_requests` (non-existent Bitbucket API v2.0 endpoint)
+- ✅ 37 tools covering all major Bitbucket operations
 - ✅ Type-safe with Zod validation and TypeScript interfaces
 
 We welcome contributions and feedback!
 
 ## API Coverage
 
-The server implements **38 tools** covering all major Bitbucket Cloud API v2.0 endpoints (read-only):
+The server implements **37 tools** covering all major Bitbucket Cloud API v2.0 endpoints (read-only):
 
 - **Workspaces API** - Workspace discovery and information
 - **Repositories API** - Repository listing, details, browsing, and search
@@ -417,7 +418,7 @@ You can also run `npm fund` in your project to see all funding information.
 
 Future enhancements (all read-only):
 
-- ✅ ~~38 comprehensive tools~~ **COMPLETE**
+- ✅ ~~37 comprehensive tools~~ **COMPLETE**
 - ✅ ~~Comment threads with nested replies~~ **COMPLETE**
 - ✅ ~~Comprehensive test suite~~ **COMPLETE**
 - ✅ ~~Modular handler architecture~~ **COMPLETE**
