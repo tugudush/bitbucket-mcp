@@ -199,6 +199,34 @@ bb_get_merge_base({ revspec: 'a..b' })    // NOT spec
 - **File size limits** - Large files handled with pagination (up to 10,000 lines per request)
 - **Code search** - Requires account-level enablement in Bitbucket settings
 
+## Documentation Best Practices
+
+### Sensitive Information Guidelines
+**CRITICAL**: When creating or updating documentation, examples, or test results:
+
+- ❌ **NEVER include**:
+  - Company/organization names or workspace identifiers
+  - Private repository names
+  - Employee names, usernames, or email addresses
+  - Specific PR titles, issue titles, or commit messages
+  - Internal URLs (repository URLs, PR links, issue trackers)
+  - Comment contents or code snippets from private repositories
+  - Any information that could identify a specific company or individual
+
+- ✅ **ALWAYS use**:
+  - Generic placeholders: `workspace/repository-name`, `username`, `user@example.com`
+  - Anonymous descriptions: "Current user details retrieved", "PR #123 (merged)"
+  - Sanitized examples: "Successfully tested with nested comment threads"
+  - Generic technical details that demonstrate functionality without revealing source
+
+**Example transformation:**
+```
+❌ BAD:  "Jerome Gomez (@jeromegomez1) from oceantg/otg-content-manager-ui"
+✅ GOOD: "Current user details retrieved from workspace/repository-name"
+```
+
+This applies to all documentation files including README.md, test results, changelogs, code reviews, and inline code comments.
+
 ## Recent Improvements (2025-2026)
 
 ### Modular Architecture Refactoring (2026-02)
