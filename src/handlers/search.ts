@@ -2,7 +2,11 @@
  * Search-related tool handlers
  */
 
-import { SearchRepositoriesSchema, SearchCodeSchema } from '../schemas.js';
+import {
+  SearchRepositoriesSchema,
+  SearchCodeSchema,
+  API_CONSTANTS,
+} from '../schemas.js';
 import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
 import type {
   BitbucketApiResponse,
@@ -12,19 +16,29 @@ import type {
 import { createResponse, ToolResponse } from './types.js';
 
 /**
- * Search for repositories within a workspace
+ * Search for repositories within a workspace using Bitbucket's server-side
+ * query filtering (BBQL). The `q` parameter searches by name and description.
  */
 export async function handleSearchRepositories(
   args: unknown
 ): Promise<ToolResponse> {
   const parsed = SearchRepositoriesSchema.parse(args);
 
-  // Bitbucket API v2.0 doesn't have workspace-scoped repository search
-  // Instead, list all repositories in workspace and filter client-side
-  const params = {
+  // Escape double quotes in the query to prevent BBQL injection
+  const escapedQuery = parsed.query.replace(/"/g, '\\"');
+
+  // Use Bitbucket's native q parameter (BBQL) for server-side filtering
+  const q = `name ~ "${escapedQuery}" OR description ~ "${escapedQuery}"`;
+
+  const params: Record<string, unknown> = {
+    q,
     page: parsed.page,
-    pagelen: parsed.pagelen,
+    pagelen: parsed.pagelen ?? API_CONSTANTS.MAX_PAGE_SIZE,
   };
+
+  if (parsed.sort) {
+    params.sort = parsed.sort;
+  }
 
   const url = addQueryParams(
     buildApiUrl(`/repositories/${parsed.workspace}`),
@@ -34,17 +48,7 @@ export async function handleSearchRepositories(
   const data =
     await makeRequest<BitbucketApiResponse<BitbucketRepository>>(url);
 
-  // Filter repositories based on search query
-  const searchLower = parsed.query.toLowerCase();
-  const filteredRepos = data.values.filter((repo: BitbucketRepository) => {
-    const nameMatch = repo.name.toLowerCase().includes(searchLower);
-    const descMatch =
-      repo.description?.toLowerCase().includes(searchLower) || false;
-    const fullNameMatch = repo.full_name.toLowerCase().includes(searchLower);
-    return nameMatch || descMatch || fullNameMatch;
-  });
-
-  const repoList = filteredRepos
+  const repoList = data.values
     .map(
       (repo: BitbucketRepository) =>
         `- ${repo.full_name} (${repo.language || 'Unknown'})\n` +
@@ -53,8 +57,13 @@ export async function handleSearchRepositories(
     )
     .join('\n\n');
 
+  const totalInfo = data.size != null ? ` of ${data.size} total matches` : '';
+  const pageInfo = data.next
+    ? ' (more results available — use page parameter)'
+    : '';
+
   return createResponse(
-    `Search results for "${parsed.query}" in ${parsed.workspace} (${filteredRepos.length} of ${data.values.length} total):\n\n${repoList || 'No repositories found matching the search query.'}`
+    `Search results for "${parsed.query}" in ${parsed.workspace} (${data.values.length} results${totalInfo}${pageInfo}):\n\n${repoList || 'No repositories found matching the search query.'}`
   );
 }
 

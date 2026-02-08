@@ -222,12 +222,22 @@ export const SearchRepositoriesSchema = z.object({
   workspace: z.string().describe('The workspace or username to search in'),
   query: z
     .string()
-    .describe('Search query to filter repositories by name or description'),
+    .describe(
+      'Search query to filter repositories by name or description. Uses Bitbucket server-side filtering (BBQL) to search across all repositories in the workspace.'
+    ),
   page: z.number().optional().describe('Page number for pagination'),
   pagelen: z
     .number()
     .optional()
-    .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
+    .describe(
+      `Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE}). Defaults to ${API_CONSTANTS.MAX_PAGE_SIZE} for search.`
+    ),
+  sort: z
+    .string()
+    .optional()
+    .describe(
+      'Sort field, e.g. "-updated_on" for newest first, "name" for alphabetical. Prefix with "-" for descending order.'
+    ),
 });
 
 export const GetPullRequestDiffSchema = z.object({
