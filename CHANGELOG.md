@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.2] - 2026-02-08
+
+### Added
+- **Codebase review**: Added comprehensive code quality review document (`docs/reviews/2026-02-08-codebase-review.md`)
+  - Detailed architecture analysis with 38 tools across 8 handler modules
+  - Test coverage metrics (64 unit tests, all passing)
+  - Code quality assessment (zero linting/type errors, no `any` usage)
+  - Identified 2 high, 4 medium, 3 low priority findings with actionable recommendations
+  - Security review and error handling analysis
+  - LOC metrics: 1,805 core source lines, ~2,000 handler lines, ~1,007 test lines
+
+### Removed
+- **Documentation consolidation**: Removed `DEVELOPMENT.md` to avoid duplication with README
+  - Development and debugging information now centralized in README
+- **Outdated review document**: Removed `docs/reviews/codebase-review.md` (replaced with timestamped version)
+
+### Changed
+- **Documentation structure**: Updated `.github/copilot-instructions.md` and README to reflect documentation reorganization
+- **Review process**: Established timestamped review document pattern for future code reviews
+
 ## [3.2.1] - 2026-02-08
 
 ### Changed
