@@ -7,7 +7,7 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 ## Requirements
 
 - **Code Search**: Enable at https://bitbucket.org/search for `bb_search_code` functionality
-- **Node.js**: Version 16+ with ES modules support
+- **Node.js**: Version 18+ (native fetch API support required)
 - **Authentication**: API token + email
 
 > 💡 **How to create an API Token:**
