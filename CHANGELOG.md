@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2026-02-08
+
+### Changed
+- **Claude Code configuration**: Updated README with correct Claude Code MCP setup using CLI and `.mcp.json` format
+  - Replaced outdated `claude_desktop_config.json` references with proper Claude Code configuration
+  - Added CLI command examples using `claude mcp add --transport stdio`
+  - Updated documentation for both NPM global installation and local build options
+- **Documentation consolidation**: Removed redundant DEVELOPMENT.md, moved debugging info to README
+  - Added Debugging section to README with `BITBUCKET_DEBUG` flag documentation
+  - Streamlined development documentation to avoid duplication
+
+## [3.2.0] - 2026-02-07
+
+### Added
+- **Version increment automation**: Added `scripts/version-increment.js` for automated version bumping
+- **Publishing guide improvements**: Streamlined version increment workflow in PUBLISHING.md
+
+### Changed
+- **Publishing workflow**: Updated commit, tag, and push instructions for better clarity
+
+## [3.1.0] - 2026-02-06
+
+### Removed
+- **Obsolete test files**: Removed `docs/TEST_RESULTS_PR_445.md` and related test scripts
+  - Cleaned up `test_pr_408_comments.js`, `test_pr_445.js`, `test_pr_445_advanced.js`, `test_pr_445_final.js`
+  - Superseded by more comprehensive testing implementations
+
+### Changed
+- **Dependencies**: Updated to latest versions including TypeScript, ESLint plugins, and Jest
+- **CI workflow**: Added automated build and testing with GitHub Actions
+  - Removed push triggers for cleaner workflow
+  - Updated to latest actions versions and Node.js 24+
+- **Icons**: Updated emoji icons in README for CI/CD Pipelines and Issues sections
+
+### Added
+- **Husky integration**: Added pre-commit hooks for code quality checks
+
 ## [3.0.0] - 2026-02-08
 
 ### Added
