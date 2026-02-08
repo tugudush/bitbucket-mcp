@@ -66,9 +66,9 @@ export async function handleToolCall(request: CallToolRequest) {
 - **`bb_get_file_content`** - Line-based pagination (1-10,000 lines)
 - **`bb_search_code`** - Code search with language filtering (requires account enablement)
 - **`bb_get_pull_request_comment`** - Get a single PR comment by ID
-- **`bb_get_comment_thread`** - Get comment thread with nested replies
+- **`bb_get_comment_thread`** - Get comment thread with nested replies (fetches all pages)
 
-**Test Coverage:** 31 out of 38 tools verified (100% success on testable tools)
+**Test Coverage:** 148 unit tests across 11 suites (92.2% statements), plus 31/38 integration tests verified
 
 ## Critical Development Workflow
 
@@ -208,7 +208,9 @@ bb_get_merge_base({ revspec: 'a..b' })    // NOT spec
 - **Maintainability**: Individual handler files easier to test and modify
 
 ### Comprehensive Testing (2026-02)
-- **31/38 tools verified**: 100% success on testable tools  
+- **148 unit tests across 11 suites**: All 8 handler modules + api, config, errors
+- **92.2% statement coverage**: `jest --coverage` fully operational (Jest 30)
+- **31/38 integration tools verified**: 100% success on testable tools
 - **Real-world validation**: Using actual production scenarios
 - **Dynamic ID extraction**: Pattern for extracting IDs from responses
 - **Discovery-based approach**: Sequential workspace → repo → PR → issue testing
@@ -326,8 +328,9 @@ const prId = match ? parseInt(match[1]) : null;
 ```
 
 ### Test Coverage
-- **31 out of 38 tools verified** (100% success on testable tools)
-- **100% success rate** on all testable tools
+- **148 unit tests across 11 suites** (92.2% statement coverage)
+- **31 out of 38 integration tools verified** (100% success on testable tools)
+- Handler tests mock `makeRequest`/`makeTextRequest` and verify formatting, errors, pagination
 - Some tools require specific repository features (issue trackers, CI/CD pipelines)
 
 ## Integration Points & Configuration
@@ -370,6 +373,14 @@ if (parsed.pagelen) params.append('pagelen', Math.min(parsed.pagelen, 100).toStr
 // - Language filtering with automatic mapping
 // - Rich match highlighting with line numbers
 // - Query enhancement with repo:, lang:, ext: filters
+```
+
+**✅ Repository Search**: Server-side BBQL filtering:
+```typescript
+// bb_search_repositories uses Bitbucket's q parameter (BBQL)
+const q = `name ~ "${query}" OR description ~ "${query}"`;
+const params = { q, pagelen: 100, sort: parsed.sort };
+// No longer limited to single-page client-side filtering
 ```
 
 Requirements for code search:
@@ -428,7 +439,12 @@ export async function makeRequest<T = unknown>(url: string, options: RequestInit
 - **Code search**: `bb_search_code` with language filtering and rich match highlighting
 - **Authentication fixes**: Lazy config loading resolves environment variable timing issues
 - **PR comment retrieval**: `bb_get_pull_request_comment` fetches single comment by ID
-- **Comment threads**: `bb_get_comment_thread` fetches root comment with all nested replies
+- **Comment threads**: `bb_get_comment_thread` fetches root comment with all nested replies (paginated via `fetchAllPages()`)
+
+### Pagination Utility (2026-02)
+- **`fetchAllPages<T>()`**: Generic helper in `api.ts` that follows `next` links across all pages
+- Safety limit of 50 pages (~5,000 items) to prevent infinite loops
+- Used by `handleGetCommentThread()` for large PRs with >100 comments
 
 ### Branch Handling (Fixed 2025-08)
 - **Root directory listings**: Use `?at=branch` query parameter (works with all branch names)

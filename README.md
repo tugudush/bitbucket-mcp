@@ -2,7 +2,7 @@
 
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Code.
 
-**🎯 38 tools available** | **✅ 100% tested** (31/38 tools verified) | **🏗️ Modular architecture**
+**🎯 38 tools available** | **✅ 148 unit tests** (92% coverage) | **🏗️ Modular architecture**
 
 ## Requirements
 
@@ -289,15 +289,20 @@ node build/index.js  # Test server startup
 ### Testing
 The MCP server includes comprehensive test coverage:
 
-**Test Coverage:** 31 out of 38 tools verified (100% success rate on testable tools)
-- Covers workspace discovery, repositories, PRs, branches, commits, files, comments
-- Tests use discovery-based approach with dynamic ID extraction
+**Unit Tests:** 148 tests across 11 test suites (92.2% statement coverage)
+- All 8 handler modules tested: repository, pullrequest, commit, diff, issue, pipeline, search, workspace
+- Core modules tested: api, config, errors
+- Uses mocked `makeRequest`/`makeTextRequest` with thorough edge case coverage
+- Run `npm test` or `jest --coverage` for full coverage report
+
+**Integration Tests:** 31 out of 38 tools verified (100% success rate on testable tools)
+- Uses discovery-based approach with dynamic ID extraction
 - Validates all major Bitbucket operations with real-world scenarios
 
 To create your own tests:
-1. Load credentials from `.vscode/mcp.json`
-2. Use MCP stdio protocol to invoke tools
-3. Extract dynamic IDs from responses for dependent tests
+1. Follow existing handler test patterns in `src/__tests__/handlers/`
+2. Mock API calls using `jest.mock` for unit tests
+3. For integration tests, load credentials from `.vscode/mcp.json`
 4. Validate tool responses and error handling
 
 ### VS Code Integration
@@ -345,14 +350,15 @@ See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for det
 
 ## Development Status
 
-✅ **Production Ready** - Comprehensive test coverage with 31/38 tools verified (100% success on testable tools)
+✅ **Production Ready** - 148 unit tests (92% coverage), 31/38 integration tests verified
 
 **Recent Updates (2026-02):**
-- ✅ Modular handler registry architecture
-- ✅ Comprehensive test suite with real-world validation
+- ✅ Comprehensive unit tests for all 8 handler modules (148 tests, 11 suites)
+- ✅ Jest coverage tooling fixed — `jest --coverage` fully operational
+- ✅ Repository search uses server-side BBQL filtering (no longer limited to single page)
+- ✅ Comment thread pagination fetches all pages for large PRs via `fetchAllPages()`
 - ✅ 38 tools covering all major Bitbucket operations
 - ✅ Type-safe with Zod validation and TypeScript interfaces
-- ✅ Full comment thread support (inline comments with nested replies)
 
 We welcome contributions and feedback!
 
