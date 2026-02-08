@@ -292,30 +292,22 @@ See existing tools in `src/handlers/` for reference patterns.
 
 ## Testing Patterns
 
-### Comprehensive Test Suite
-Four test scripts provide full coverage of MCP tools:
+### Testing Approach
+Test scripts should follow this pattern for comprehensive MCP tool coverage:
 
-**1. `test_all_tools.js` - Discovery-based testing**
+**Discovery-based testing approach:**
 - Sequential discovery: workspaces → repos → PRs → issues
 - Dynamic ID extraction from response text
 - Credential loading from `.vscode/mcp.json`
 - Pattern: Extract and reuse IDs for dependent tests
 
-**2. `test_pr_445.js` - Full feature testing**
-- Tests all core tools across 8 categories
-- Uses real PR #445 from oceantg/otg-keycloak-ui
-- Validates workspace, repos, PRs, branches, commits, files
-
-**3. `test_pr_445_final.js` - Complete coverage**
-- Corrected parameter names (commit, name, revspec)
-- Multiple file content tests
-- Multiple branch comparisons
-- Multiple commit details
-
-**4. `test_pr_408_comments.js` - Comment thread verification**
-- Tests PR comment tools with nested replies
-- Validates inline comments with file location
-- Uses real comment #744553155
+**Testing coverage areas:**
+- Core repository operations (workspace, repo listing, browsing)
+- Pull request functionality (listing, details, comments, diffs)
+- Branch and commit operations (listing, details, comparisons)
+- File operations (browsing, content retrieval, history)
+- Search and discovery features
+- User information retrieval
 
 ### Testing Pattern Example
 ```javascript
@@ -336,11 +328,10 @@ const match = result.content[0].text.match(/- #(\d+):/);
 const prId = match ? parseInt(match[1]) : null;
 ```
 
-### Test Results
-- **31 out of 33 tools tested** (94% coverage)
-- **100% success rate** on testable tools
-- **2 tools not testable**: bb_get_issues, bb_get_issue (repo has no issue tracker)
-- See `docs/TEST_RESULTS_PR_445.md` for detailed results
+### Test Coverage
+- **31 out of 38 tools verified** (100% success on testable tools)
+- **100% success rate** on all testable tools
+- Some tools require specific repository features (issue trackers, CI/CD pipelines)
 
 ## Integration Points & Configuration
 
@@ -496,10 +487,10 @@ bb_search_code --workspace myworkspace --search_query "class extends"
 ### PR Comment Operations
 ```bash
 # Get a single comment by ID
-bb_get_pull_request_comment --workspace myworkspace --repo_slug myrepo --pull_request_id 408 --comment_id 744553155
+bb_get_pull_request_comment --workspace myworkspace --repo_slug myrepo --pull_request_id 123 --comment_id 12345678
 
 # Get a comment thread with all nested replies
-bb_get_comment_thread --workspace myworkspace --repo_slug myrepo --pull_request_id 408 --comment_id 744553155
+bb_get_comment_thread --workspace myworkspace --repo_slug myrepo --pull_request_id 123 --comment_id 12345678
 ```
 
 ## Development Status & References
