@@ -21,7 +21,7 @@ import {
   addQueryParams,
 } from '../api.js';
 import type { DiffstatResponse, DiffstatEntry } from '../types.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createResponse, createDataResponse, ToolResponse } from './types.js';
 
 /**
  * Format a diffstat entry into a readable line
@@ -66,8 +66,9 @@ export async function handleGetPullRequestDiff(
     );
   }
 
-  return createResponse(
-    `Diff for PR #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug}:\n\n${diff}`
+  return createDataResponse(
+    `Diff for PR #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug}:\n\n${diff}`,
+    { diff }
   );
 }
 
@@ -101,10 +102,11 @@ export async function handleGetPullRequestDiffstat(
 
   const fileList = data.values.map(formatDiffstatEntry).join('\n');
 
-  return createResponse(
+  return createDataResponse(
     `Diffstat for PR #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug}:\n` +
       `${data.values.length} file(s) changed, +${totalAdded} -${totalRemoved}\n\n` +
-      fileList
+      fileList,
+    data
   );
 }
 
@@ -133,8 +135,9 @@ export async function handleGetDiff(args: unknown): Promise<ToolResponse> {
     return createResponse(`No changes found for spec: ${parsed.spec}`);
   }
 
-  return createResponse(
-    `Diff for ${parsed.spec} in ${parsed.workspace}/${parsed.repo_slug}:\n\n${diff}`
+  return createDataResponse(
+    `Diff for ${parsed.spec} in ${parsed.workspace}/${parsed.repo_slug}:\n\n${diff}`,
+    { diff }
   );
 }
 
@@ -167,9 +170,10 @@ export async function handleGetDiffstat(args: unknown): Promise<ToolResponse> {
 
   const fileList = data.values.map(formatDiffstatEntry).join('\n');
 
-  return createResponse(
+  return createDataResponse(
     `Diffstat for ${parsed.spec} in ${parsed.workspace}/${parsed.repo_slug}:\n` +
       `${data.values.length} file(s) changed, +${totalAdded} -${totalRemoved}\n\n` +
-      fileList
+      fileList,
+    data
   );
 }
