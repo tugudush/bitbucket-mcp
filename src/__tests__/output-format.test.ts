@@ -428,4 +428,66 @@ describe('Output Format — handleToolCall post-processing', () => {
       expect(text).toContain('b');
     });
   });
+
+  describe('BITBUCKET_DEFAULT_FORMAT env var', () => {
+    const originalEnv = process.env.BITBUCKET_DEFAULT_FORMAT;
+
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.BITBUCKET_DEFAULT_FORMAT;
+      } else {
+        process.env.BITBUCKET_DEFAULT_FORMAT = originalEnv;
+      }
+    });
+
+    it('should use env var default when output_format not specified', async () => {
+      process.env.BITBUCKET_DEFAULT_FORMAT = 'json';
+
+      const data = { id: 1, name: 'test' };
+      mockHandler.mockResolvedValue({
+        content: [{ type: 'text', text: 'text output' }],
+        _data: data,
+      });
+
+      const result = await handleToolCall(
+        makeRequest('bb_test_tool', { workspace: 'ws' }) as never
+      );
+
+      // Should use JSON since env var is set to json
+      expect(result.content[0].text).toContain('"id": 1');
+      expect(result.content[0].text).toContain('"name": "test"');
+    });
+
+    it('should prefer per-call output_format over env var', async () => {
+      process.env.BITBUCKET_DEFAULT_FORMAT = 'json';
+
+      mockHandler.mockResolvedValue({
+        content: [{ type: 'text', text: 'plain text output' }],
+      });
+
+      const result = await handleToolCall(
+        makeRequest('bb_test_tool', {
+          workspace: 'ws',
+          output_format: 'text',
+        }) as never
+      );
+
+      // Should use text (per-call) not json (env var)
+      expect(result.content[0].text).toBe('plain text output');
+    });
+
+    it('should fall back to text when env var is not set', async () => {
+      delete process.env.BITBUCKET_DEFAULT_FORMAT;
+
+      mockHandler.mockResolvedValue({
+        content: [{ type: 'text', text: 'plain text output' }],
+      });
+
+      const result = await handleToolCall(
+        makeRequest('bb_test_tool', { workspace: 'ws' }) as never
+      );
+
+      expect(result.content[0].text).toBe('plain text output');
+    });
+  });
 });

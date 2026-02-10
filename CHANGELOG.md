@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **TOON output format support** ([bc0dc89](https://github.com/tugudush/bitbucket-mcp/commit/bc0dc89))
+  - Added `output_format` parameter to all 37 tools with three format options:
+    - `text` (default) — Human-readable formatted output (preserves backward compatibility)
+    - `json` — Pretty-printed JSON with 2-space indentation
+    - `toon` — Token-Oriented Object Notation (30-60% token savings for LLM consumption)
+  - New dependency: `@toon-format/toon` ^2.1.0 for compact tabular format generation
+- **JMESPath filtering support** ([bc0dc89](https://github.com/tugudush/bitbucket-mcp/commit/bc0dc89))
+  - Added `filter` parameter to all 37 tools for powerful data transformation
+  - Supports JMESPath query expressions applied before format conversion
+  - New dependency: `jmespath` ^0.16.0, `@types/jmespath` ^0.15.2
+  - Examples: array filtering, object projection, nested queries
+- **Structured data in responses** ([bc0dc89](https://github.com/tugudush/bitbucket-mcp/commit/bc0dc89))
+  - Extended `ToolResponse` interface with optional `_data` field
+  - Added `createDataResponse()` helper function in `src/handlers/types.ts`
+  - Updated all 37 handlers across 8 modules to provide structured API data alongside text output
+  - Enables format conversion and filtering without breaking existing text-based integrations
+- **Comprehensive output format tests** ([bc0dc89](https://github.com/tugudush/bitbucket-mcp/commit/bc0dc89))
+  - New test suite: `src/__tests__/output-format.test.ts` with 22 tests
+  - Coverage: default text format, JSON conversion, TOON conversion, JMESPath filtering, edge cases, env var default
+  - Total test count increased from 146 to 168 tests
+- **Competitive analysis documentation** ([bc0dc89](https://github.com/tugudush/bitbucket-mcp/commit/bc0dc89))
+  - Added `docs/bitbucket-mcp-reviews-and-ranking.md` with comprehensive review of 6 Bitbucket MCP servers
+  - Feature matrix comparison, detailed reviews, and project rankings
+
+### Changed
+- **Tool schema architecture** ([bc0dc89](https://github.com/tugudush/bitbucket-mcp/commit/bc0dc89))
+  - Refactored `src/tools.ts` with `toolSchema()` helper for automatic output option injection
+  - Enhanced `handleToolCall()` with post-processing pipeline: extract options → call handler → apply filter → convert format
+  - Added `formatOutput()`, `extractOutputOptions()`, and `stripData()` utility functions
+- **Jest configuration** ([bc0dc89](https://github.com/tugudush/bitbucket-mcp/commit/bc0dc89))
+  - Updated `transformIgnorePatterns` to transform `@toon-format/toon` and `jmespath` ESM packages
+  - Ensures proper Jest compatibility with new dependencies
+- **Configuration** — Added `BITBUCKET_DEFAULT_FORMAT` environment variable to `src/config.ts`
+  - Allows users to set a global default output format (`text`, `json`, or `toon`) via MCP client env config
+  - Per-call `output_format` always takes priority over the env var
+  - Falls back to `text` when unset (fully backward compatible)
+
 ## [3.3.1] - 2026-02-09
 
 ### Fixed

@@ -2,7 +2,7 @@
 
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Code.
 
-**🎯 37 tools available** | **✅ 146 unit tests** (92% coverage) | **🏗️ Modular architecture**
+**🎯 37 tools available** | **✅ 168 unit tests** (92% coverage) | **🏗️ Modular architecture** | **📦 TOON/JSON/text output formats**
 
 ## Requirements
 
@@ -233,6 +233,76 @@ Or add to `.mcp.json` (project scope):
 
 **Total: 37 tools across 8 categories**
 
+## Output Formats & Filtering
+
+All 37 tools support flexible output formatting and data filtering via two optional parameters:
+
+### Output Format (`output_format`)
+
+Control how responses are returned:
+
+| Format | Description | Best For |
+|--------|-------------|----------|
+| `text` | Human-readable formatted output (default) | Debugging, human review |
+| `json` | Pretty-printed JSON with 2-space indentation | Programmatic consumption, structured data |
+| `toon` | Token-Oriented Object Notation — compact tabular format | **LLM consumption (30-60% token savings)** |
+
+**TOON format** significantly reduces token usage when AI assistants consume Bitbucket data, making it ideal for large responses like PR lists, commit histories, and file contents.
+
+### JMESPath Filtering (`filter`)
+
+Apply [JMESPath](https://jmespath.org) expressions to transform structured response data before format conversion:
+
+```
+# Extract just PR titles and authors
+filter: "values[].{title: title, author: author.display_name}"
+
+# Get only open PRs
+filter: "values[?state=='OPEN']"
+
+# Extract repository names
+filter: "values[].full_name"
+```
+
+Filtering is applied **before** format conversion, so you can combine `filter` with any `output_format`.
+
+### Examples
+
+**Get repositories as compact TOON format:**
+```
+bb_list_repositories workspace=myworkspace output_format=toon
+```
+
+**Get PR details as JSON:**
+```
+bb_get_pull_request workspace=myworkspace repo_slug=myrepo pull_request_id=123 output_format=json
+```
+
+**Filter and format — get only PR titles in TOON:**
+```
+bb_get_pull_requests workspace=myworkspace repo_slug=myrepo output_format=toon filter="values[].{id: id, title: title, state: state}"
+```
+
+> **Tip:** When using this server with AI assistants, consider using `output_format=toon` for large responses to reduce token consumption by 30-60%.
+
+### Global Default Format
+
+To set a default output format for all tools without specifying it per-call, set the `BITBUCKET_DEFAULT_FORMAT` environment variable:
+
+```json
+{
+  "env": {
+    "BITBUCKET_API_TOKEN": "your-token",
+    "BITBUCKET_EMAIL": "your@email.com",
+    "BITBUCKET_DEFAULT_FORMAT": "toon"
+  }
+}
+```
+
+- If unset, defaults to `text` (backward compatible)
+- Per-call `output_format` always takes priority over the env var
+- Accepted values: `text`, `json`, `toon`
+
 ## Usage Examples
 
 **Repository Discovery:**
@@ -288,8 +358,9 @@ node build/index.js  # Test server startup
 ### Testing
 The MCP server includes comprehensive test coverage:
 
-**Unit Tests:** 146 tests across 11 test suites (92.2% statement coverage)
+**Unit Tests:** 168 tests across 12 test suites (92.2% statement coverage)
 - All 8 handler modules tested: repository, pullrequest, commit, diff, issue, pipeline, search, workspace
+- Output format conversion tests: text, JSON, TOON, JMESPath filtering, edge cases
 - Core modules tested: api, config, errors
 - Uses mocked `makeRequest`/`makeTextRequest` with thorough edge case coverage
 - Run `npm test` or `jest --coverage` for full coverage report
@@ -349,10 +420,13 @@ See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for det
 
 ## Development Status
 
-✅ **Production Ready** - 146 unit tests (92% coverage), 31/37 integration tests verified
+✅ **Production Ready** - 168 unit tests (92% coverage), 31/37 integration tests verified
 
 **Recent Updates (2026-02):**
-- ✅ Comprehensive unit tests for all 8 handler modules (146 tests, 11 suites)
+- ✅ **TOON output format** — compact tabular format reducing LLM token consumption by 30-60%
+- ✅ **JSON output format** — pretty-printed structured data for programmatic use
+- ✅ **JMESPath filtering** — powerful data transformation on all 37 tools via `filter` parameter
+- ✅ Comprehensive unit tests for all 8 handler modules (168 tests, 12 suites)
 - ✅ Jest coverage tooling fixed — `jest --coverage` fully operational
 - ✅ Repository search uses server-side BBQL filtering (no longer limited to single page)
 - ✅ Comment thread pagination fetches all pages for large PRs via `fetchAllPages()`
@@ -422,6 +496,7 @@ Future enhancements (all read-only):
 - ✅ ~~Comment threads with nested replies~~ **COMPLETE**
 - ✅ ~~Comprehensive test suite~~ **COMPLETE**
 - ✅ ~~Modular handler architecture~~ **COMPLETE**
+- ✅ ~~TOON/JSON output formats + JMESPath filtering~~ **COMPLETE**
 - Repository statistics and analytics
 - Enhanced search capabilities with more filter options
 - Webhook information retrieval (read-only)

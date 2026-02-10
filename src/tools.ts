@@ -308,13 +308,19 @@ function extractOutputOptions(args: unknown): {
 } {
   if (args && typeof args === 'object' && !Array.isArray(args)) {
     const { output_format, filter, ...rest } = args as Record<string, unknown>;
+    const envDefault = process.env.BITBUCKET_DEFAULT_FORMAT as
+      | OutputFormat
+      | undefined;
     return {
       cleanArgs: rest,
-      outputFormat: (output_format as OutputFormat) || 'text',
+      outputFormat: (output_format as OutputFormat) || envDefault || 'text',
       filter: filter as string | undefined,
     };
   }
-  return { cleanArgs: args, outputFormat: 'text' };
+  const envDefault = process.env.BITBUCKET_DEFAULT_FORMAT as
+    | OutputFormat
+    | undefined;
+  return { cleanArgs: args, outputFormat: envDefault || 'text' };
 }
 
 /**

@@ -19,6 +19,9 @@ const ConfigSchema = z.object({
     .string()
     .transform(val => val === 'true')
     .default('false'),
+
+  // Output format
+  BITBUCKET_DEFAULT_FORMAT: z.enum(['text', 'json', 'toon']).optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
