@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-02-10
+
+### Fixed
+- **Jest coverage collection** ([remove glob/inflight/rimraf overrides](https://github.com/tugudush/bitbucket-mcp/commit/...))
+  - Removed `glob: "^13.0.0"` override that broke `test-exclude@6.0.0` (used by Jest coverage)
+  - glob v13 changed from callback function to object export, causing `promisify()` to fail with: `TypeError: The "original" argument must be of type function`
+  - Removed related `inflight` and `rimraf` overrides to avoid future conflicts
+  - All 12 test suites now pass with coverage collection (168 tests, 92.48% coverage)
+  - npm audit still reports 0 vulnerabilities without overrides
+
 ## [3.4.0] - 2026-02-10
 
 ### Added

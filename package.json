@@ -1,6 +1,6 @@
 {
   "name": "@tugudush/bitbucket-mcp",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "A Model Context Protocol server for Bitbucket with read-only operations",
   "type": "module",
   "main": "build/index.js",
@@ -54,11 +54,6 @@
       "url": "https://github.com/tugudush/bitbucket-mcp#crypto-donations"
     }
   ],
-  "overrides": {
-    "glob": "^13.0.0",
-    "inflight": "npm:@colors/inflight@^1.0.6",
-    "rimraf": "^6.0.0"
-  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@toon-format/toon": "^2.0.1",
