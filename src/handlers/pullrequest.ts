@@ -26,7 +26,7 @@ import type {
   BitbucketCommit,
   BitbucketCommitStatus,
 } from '../types.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createResponse, createDataResponse, ToolResponse } from './types.js';
 
 /**
  * Get pull requests for a repository
@@ -60,8 +60,9 @@ export async function handleGetPullRequests(
     )
     .join('\n\n');
 
-  return createResponse(
-    `Pull requests for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${prList}`
+  return createDataResponse(
+    `Pull requests for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${prList}`,
+    data
   );
 }
 
@@ -77,7 +78,7 @@ export async function handleGetPullRequest(
   );
   const data = await makeRequest<BitbucketPullRequest>(url);
 
-  return createResponse(
+  return createDataResponse(
     `Pull Request #${data.id}: ${data.title}\n` +
       `Author: ${data.author.display_name}\n` +
       `State: ${data.state}\n` +
@@ -85,7 +86,8 @@ export async function handleGetPullRequest(
       `Updated: ${data.updated_on}\n` +
       `Source: ${data.source.branch.name} → ${data.destination.branch.name}\n` +
       `Description:\n${data.description || 'No description'}\n` +
-      `Reviewers: ${data.reviewers?.map(r => r.display_name).join(', ') || 'None'}`
+      `Reviewers: ${data.reviewers?.map(r => r.display_name).join(', ') || 'None'}`,
+    data
   );
 }
 
@@ -119,8 +121,9 @@ export async function handleGetPullRequestComments(
     )
     .join('\n\n');
 
-  return createResponse(
-    `Comments for PR #${parsed.pull_request_id} (${data.size} total):\n\n${commentList}`
+  return createDataResponse(
+    `Comments for PR #${parsed.pull_request_id} (${data.size} total):\n\n${commentList}`,
+    data
   );
 }
 
@@ -164,7 +167,7 @@ export async function handleGetPullRequestComment(
     response += `\n\n[This comment has been deleted]`;
   }
 
-  return createResponse(response);
+  return createDataResponse(response, comment);
 }
 
 /**
@@ -263,7 +266,7 @@ export async function handleGetCommentThread(
     response += `\nNo replies to this comment.`;
   }
 
-  return createResponse(response);
+  return createDataResponse(response, { root: rootComment, replies });
 }
 
 /**
@@ -319,8 +322,9 @@ export async function handleGetPullRequestActivity(
     })
     .join('\n\n');
 
-  return createResponse(
-    `Activity for PR #${parsed.pull_request_id} (${data.size} total):\n\n${activityList}`
+  return createDataResponse(
+    `Activity for PR #${parsed.pull_request_id} (${data.size} total):\n\n${activityList}`,
+    data
   );
 }
 
@@ -358,8 +362,9 @@ export async function handleGetPullRequestCommits(
     )
     .join('\n\n');
 
-  return createResponse(
-    `Commits for PR #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug} (${data.values.length} commits):\n\n${commitList}`
+  return createDataResponse(
+    `Commits for PR #${parsed.pull_request_id} in ${parsed.workspace}/${parsed.repo_slug} (${data.values.length} commits):\n\n${commitList}`,
+    data
   );
 }
 
@@ -416,7 +421,8 @@ export async function handleGetPullRequestStatuses(
     )
     .join('\n\n');
 
-  return createResponse(
-    `Build statuses for PR #${parsed.pull_request_id} (${data.values.length} total):\n\n${statusList}`
+  return createDataResponse(
+    `Build statuses for PR #${parsed.pull_request_id} (${data.values.length} total):\n\n${statusList}`,
+    data
   );
 }

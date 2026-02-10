@@ -14,7 +14,7 @@ import type {
   BitbucketWorkspace,
   BitbucketUser,
 } from '../types.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createDataResponse, ToolResponse } from './types.js';
 
 /**
  * List all accessible workspaces
@@ -39,8 +39,9 @@ export async function handleListWorkspaces(
     )
     .join('\n\n');
 
-  return createResponse(
-    `Accessible workspaces (${data.size} total):\n\n${workspaceList}`
+  return createDataResponse(
+    `Accessible workspaces (${data.size} total):\n\n${workspaceList}`,
+    data
   );
 }
 
@@ -52,11 +53,12 @@ export async function handleGetWorkspace(args: unknown): Promise<ToolResponse> {
   const url = buildApiUrl(`/workspaces/${parsed.workspace}`);
   const data = await makeRequest<BitbucketWorkspace>(url);
 
-  return createResponse(
+  return createDataResponse(
     `Workspace: ${data.name} (${data.slug})\n` +
       `Type: ${data.type}\n` +
       `UUID: ${data.uuid || 'Not available'}\n` +
-      `Created: ${data.created_on || 'Unknown'}`
+      `Created: ${data.created_on || 'Unknown'}`,
+    data
   );
 }
 
@@ -73,14 +75,15 @@ export async function handleGetUser(args: unknown): Promise<ToolResponse> {
     : buildApiUrl('/user');
   const data = await makeRequest<BitbucketUser>(url);
 
-  return createResponse(
+  return createDataResponse(
     `User: ${data.display_name}${data.username ? ` (@${data.username})` : ''}\n` +
       `UUID: ${data.uuid || 'Not available'}\n` +
       `Account ID: ${data.account_id || 'Not available'}\n` +
       `Type: ${data.type}\n` +
       `Website: ${data.website || 'None'}\n` +
       `Location: ${data.location || 'Not specified'}\n` +
-      `Created: ${data.created_on || 'Not available'}`
+      `Created: ${data.created_on || 'Not available'}`,
+    data
   );
 }
 
@@ -96,12 +99,13 @@ export async function handleGetCurrentUser(
   const url = buildApiUrl('/user');
   const data = await makeRequest<BitbucketUser>(url);
 
-  return createResponse(
+  return createDataResponse(
     `Current User: ${data.display_name}${data.username ? ` (@${data.username})` : ''}\n` +
       `Account ID: ${data.account_id || 'Not available'}\n` +
       `Type: ${data.type}\n` +
       `Website: ${data.website || 'None'}\n` +
       `Location: ${data.location || 'Not specified'}\n` +
-      `Created: ${data.created_on || 'Not available'}`
+      `Created: ${data.created_on || 'Not available'}`,
+    data
   );
 }

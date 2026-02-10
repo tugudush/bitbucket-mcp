@@ -25,7 +25,7 @@ import type {
   BitbucketPipeline,
   BitbucketPipelineStep,
 } from '../types.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createResponse, createDataResponse, ToolResponse } from './types.js';
 
 /**
  * Normalize a UUID — ensure it has curly braces for the API
@@ -115,8 +115,9 @@ export async function handleListPipelines(
     })
     .join('\n\n');
 
-  return createResponse(
-    `Pipelines for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${pipelineList}`
+  return createDataResponse(
+    `Pipelines for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${pipelineList}`,
+    data
   );
 }
 
@@ -137,7 +138,7 @@ export async function handleGetPipeline(args: unknown): Promise<ToolResponse> {
   const trigger = data.trigger?.name || 'Unknown';
   const creator = data.creator?.display_name || 'Unknown';
 
-  return createResponse(
+  return createDataResponse(
     `Pipeline #${data.build_number}\n` +
       `Status: ${formatPipelineState(data.state)}\n` +
       `Branch: ${ref}\n` +
@@ -147,7 +148,8 @@ export async function handleGetPipeline(args: unknown): Promise<ToolResponse> {
       `Duration: ${formatDuration(data.duration_in_seconds)}\n` +
       `Created: ${data.created_on}\n` +
       (data.completed_on ? `Completed: ${data.completed_on}\n` : '') +
-      `UUID: ${data.uuid}`
+      `UUID: ${data.uuid}`,
+    data
   );
 }
 
@@ -194,8 +196,9 @@ export async function handleGetPipelineSteps(
     })
     .join('\n\n');
 
-  return createResponse(
-    `Pipeline steps (${data.values.length} total):\n\n${stepList}`
+  return createDataResponse(
+    `Pipeline steps (${data.values.length} total):\n\n${stepList}`,
+    data
   );
 }
 
@@ -225,7 +228,8 @@ export async function handleGetPipelineStepLog(
     ? log.substring(log.length - MAX_LOG_LENGTH)
     : log;
 
-  return createResponse(
-    `Pipeline step log${truncated ? ' (truncated to last 50K chars)' : ''}:\n\n${logContent}`
+  return createDataResponse(
+    `Pipeline step log${truncated ? ' (truncated to last 50K chars)' : ''}:\n\n${logContent}`,
+    { log: logContent, truncated }
   );
 }

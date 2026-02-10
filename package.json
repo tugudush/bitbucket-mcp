@@ -1,6 +1,6 @@
 {
   "name": "@tugudush/bitbucket-mcp",
-  "version": "3.3.1",
+  "version": "3.4.1",
   "description": "A Model Context Protocol server for Bitbucket with read-only operations",
   "type": "module",
   "main": "build/index.js",
@@ -56,6 +56,8 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "@toon-format/toon": "^2.0.1",
+    "jmespath": "^0.16.0",
     "zod": "^3.22.0",
     "zod-to-json-schema": "^3.22.0"
   },
@@ -63,6 +65,7 @@
     "@eslint/js": "^9.32.0",
     "@jest/globals": "^30.0.5",
     "@types/jest": "^30.0.0",
+    "@types/jmespath": "^0.15.2",
     "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",

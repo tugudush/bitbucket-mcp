@@ -28,6 +28,6 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@modelcontextprotocol)/)'
+    'node_modules/(?!(@modelcontextprotocol|@toon-format|jmespath)/)'
   ]
 };

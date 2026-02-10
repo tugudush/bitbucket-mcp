@@ -30,7 +30,7 @@ import type {
   BitbucketBranchDetailed,
 } from '../types.js';
 import { BitbucketApiError } from '../errors.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createResponse, createDataResponse, ToolResponse } from './types.js';
 
 /**
  * Resolve a git reference (branch, tag, or commit SHA) to a commit SHA.
@@ -71,7 +71,7 @@ export async function handleGetRepository(
   );
   const data = await makeRequest<BitbucketRepository>(url);
 
-  return createResponse(
+  return createDataResponse(
     `Repository: ${data.full_name}\n` +
       `Description: ${data.description || 'No description'}\n` +
       `Language: ${data.language || 'Not specified'}\n` +
@@ -81,7 +81,8 @@ export async function handleGetRepository(
       `Size: ${data.size ? `${data.size} bytes` : 'Unknown'}\n` +
       `Forks: ${data.forks_count || 0}\n` +
       `Watchers: ${data.watchers_count || 0}\n` +
-      `Website: ${data.website || 'None'}`
+      `Website: ${data.website || 'None'}`,
+    data
   );
 }
 
@@ -112,8 +113,9 @@ export async function handleListRepositories(
     )
     .join('\n\n');
 
-  return createResponse(
-    `Repositories in ${parsed.workspace} (${data.size} total):\n\n${repoList}`
+  return createDataResponse(
+    `Repositories in ${parsed.workspace} (${data.size} total):\n\n${repoList}`,
+    data
   );
 }
 
@@ -144,8 +146,9 @@ export async function handleGetBranches(args: unknown): Promise<ToolResponse> {
     )
     .join('\n\n');
 
-  return createResponse(
-    `Branches for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${branchList}`
+  return createDataResponse(
+    `Branches for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${branchList}`,
+    data
   );
 }
 
@@ -176,8 +179,9 @@ export async function handleGetCommits(args: unknown): Promise<ToolResponse> {
     )
     .join('\n\n');
 
-  return createResponse(
-    `Commits for ${parsed.workspace}/${parsed.repo_slug}${parsed.branch ? ` (${parsed.branch})` : ''} (${data.size} total):\n\n${commitList}`
+  return createDataResponse(
+    `Commits for ${parsed.workspace}/${parsed.repo_slug}${parsed.branch ? ` (${parsed.branch})` : ''} (${data.size} total):\n\n${commitList}`,
+    data
   );
 }
 
@@ -267,11 +271,12 @@ export async function handleBrowseRepository(
       })
       .join('\n');
 
-    return createResponse(
+    return createDataResponse(
       `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
         `Path: /${path}\n` +
         `Ref: ${ref}\n` +
-        `Items (${items.length} of ${data.size || data.values.length} total):\n\n${itemList}`
+        `Items (${items.length} of ${data.size || data.values.length} total):\n\n${itemList}`,
+      data
     );
   } catch (error) {
     if (error instanceof BitbucketApiError && error.status === 404) {
@@ -349,13 +354,21 @@ export async function handleGetFileContent(
   const endLine = Math.min(start + limit - 1, lines.length);
   const paginatedLines = lines.slice(start - 1, endLine);
 
-  return createResponse(
+  return createDataResponse(
     `File: ${parsed.file_path} (lines ${start}-${endLine} of ${lines.length})\n` +
       `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
       `Ref: ${ref}\n\n` +
       paginatedLines
         .map((line, index) => `${start + index}: ${line}`)
-        .join('\n')
+        .join('\n'),
+    {
+      file_path: parsed.file_path,
+      ref,
+      total_lines: lines.length,
+      start,
+      end: endLine,
+      content,
+    }
   );
 }
 
@@ -392,8 +405,9 @@ export async function handleGetTags(args: unknown): Promise<ToolResponse> {
     )
     .join('\n\n');
 
-  return createResponse(
-    `Tags for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${tagList}`
+  return createDataResponse(
+    `Tags for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${tagList}`,
+    data
   );
 }
 
@@ -411,7 +425,7 @@ export async function handleGetTag(args: unknown): Promise<ToolResponse> {
     ? data.target.author.user?.display_name || data.target.author.raw
     : 'Unknown';
 
-  return createResponse(
+  return createDataResponse(
     `Tag: ${data.name}\n` +
       `Target commit: ${data.target.hash}\n` +
       `Date: ${data.target.date}\n` +
@@ -419,7 +433,8 @@ export async function handleGetTag(args: unknown): Promise<ToolResponse> {
       (data.target.message
         ? `Commit message: ${data.target.message.trim()}\n`
         : '') +
-      (data.message ? `Tag message: ${data.message.trim()}\n` : '')
+      (data.message ? `Tag message: ${data.message.trim()}\n` : ''),
+    data
   );
 }
 
@@ -437,7 +452,7 @@ export async function handleGetBranch(args: unknown): Promise<ToolResponse> {
     ? data.target.author.user?.display_name || data.target.author.raw
     : 'Unknown';
 
-  return createResponse(
+  return createDataResponse(
     `Branch: ${data.name}\n` +
       `Head commit: ${data.target.hash}\n` +
       `Date: ${data.target.date}\n` +
@@ -450,6 +465,7 @@ export async function handleGetBranch(args: unknown): Promise<ToolResponse> {
         : '') +
       (data.default_merge_strategy
         ? `Default merge strategy: ${data.default_merge_strategy}\n`
-        : '')
+        : ''),
+    data
   );
 }

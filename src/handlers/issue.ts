@@ -5,7 +5,7 @@
 import { GetIssuesSchema, GetIssueSchema } from '../schemas.js';
 import { makeRequest, buildApiUrl, addQueryParams } from '../api.js';
 import type { BitbucketApiResponse, BitbucketIssue } from '../types.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createDataResponse, ToolResponse } from './types.js';
 
 /**
  * Get issues for a repository
@@ -37,8 +37,9 @@ export async function handleGetIssues(args: unknown): Promise<ToolResponse> {
     )
     .join('\n\n');
 
-  return createResponse(
-    `Issues for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${issueList}`
+  return createDataResponse(
+    `Issues for ${parsed.workspace}/${parsed.repo_slug} (${data.size} total):\n\n${issueList}`,
+    data
   );
 }
 
@@ -52,7 +53,7 @@ export async function handleGetIssue(args: unknown): Promise<ToolResponse> {
   );
   const data = await makeRequest<BitbucketIssue>(url);
 
-  return createResponse(
+  return createDataResponse(
     `Issue #${data.id}: ${data.title}\n` +
       `State: ${data.state}\n` +
       `Kind: ${data.kind}\n` +
@@ -61,6 +62,7 @@ export async function handleGetIssue(args: unknown): Promise<ToolResponse> {
       `Assignee: ${data.assignee?.display_name || 'Unassigned'}\n` +
       `Created: ${data.created_on}\n` +
       `Updated: ${data.updated_on}\n` +
-      `Content:\n${data.content?.raw || 'No content'}`
+      `Content:\n${data.content?.raw || 'No content'}`,
+    data
   );
 }
