@@ -13,7 +13,7 @@ import type {
   BitbucketRepository,
   CodeSearchResponse,
 } from '../types.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createDataResponse, ToolResponse } from './types.js';
 
 /**
  * Search for repositories within a workspace using Bitbucket's server-side
@@ -62,8 +62,9 @@ export async function handleSearchRepositories(
     ? ' (more results available — use page parameter)'
     : '';
 
-  return createResponse(
-    `Search results for "${parsed.query}" in ${parsed.workspace} (${data.values.length} results${totalInfo}${pageInfo}):\n\n${repoList || 'No repositories found matching the search query.'}`
+  return createDataResponse(
+    `Search results for "${parsed.query}" in ${parsed.workspace} (${data.values.length} results${totalInfo}${pageInfo}):\n\n${repoList || 'No repositories found matching the search query.'}`,
+    data
   );
 }
 
@@ -118,7 +119,8 @@ export async function handleSearchCode(args: unknown): Promise<ToolResponse> {
     })
     .join('\n\n');
 
-  return createResponse(
-    `Code search results for "${parsed.search_query}" in ${parsed.workspace} (${data.values.length} results):\n\n${resultList}`
+  return createDataResponse(
+    `Code search results for "${parsed.search_query}" in ${parsed.workspace} (${data.values.length} results):\n\n${resultList}`,
+    data
   );
 }

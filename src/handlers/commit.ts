@@ -22,7 +22,7 @@ import type {
   BitbucketMergeBase,
   BitbucketFileHistoryEntry,
 } from '../types.js';
-import { createResponse, ToolResponse } from './types.js';
+import { createResponse, createDataResponse, ToolResponse } from './types.js';
 
 /**
  * Get detailed information about a specific commit
@@ -38,13 +38,14 @@ export async function handleGetCommit(args: unknown): Promise<ToolResponse> {
     ? data.parents.map(p => p.hash.substring(0, 8)).join(', ')
     : 'None';
 
-  return createResponse(
+  return createDataResponse(
     `Commit: ${data.hash}\n` +
       `Message: ${data.message.trim()}\n` +
       `Author: ${data.author.user?.display_name || data.author.raw}\n` +
       `Date: ${data.date}\n` +
       `Parents: ${parents}\n` +
-      `Repository: ${data.repository?.full_name || `${parsed.workspace}/${parsed.repo_slug}`}`
+      `Repository: ${data.repository?.full_name || `${parsed.workspace}/${parsed.repo_slug}`}`,
+    data
   );
 }
 
@@ -101,8 +102,9 @@ export async function handleGetCommitStatuses(
     )
     .join('\n\n');
 
-  return createResponse(
-    `Build statuses for commit ${parsed.commit.substring(0, 8)} (${data.values.length} total):\n\n${statusList}`
+  return createDataResponse(
+    `Build statuses for commit ${parsed.commit.substring(0, 8)} (${data.values.length} total):\n\n${statusList}`,
+    data
   );
 }
 
@@ -116,14 +118,15 @@ export async function handleGetMergeBase(args: unknown): Promise<ToolResponse> {
   );
   const data = await makeRequest<BitbucketMergeBase>(url);
 
-  return createResponse(
+  return createDataResponse(
     `Merge base for ${parsed.revspec}:\n` +
       `Commit: ${data.hash}\n` +
       (data.message ? `Message: ${data.message.trim()}\n` : '') +
       (data.date ? `Date: ${data.date}\n` : '') +
       (data.author
         ? `Author: ${data.author.user?.display_name || data.author.raw}\n`
-        : '')
+        : ''),
+    data
   );
 }
 
@@ -174,8 +177,9 @@ export async function handleGetFileHistory(
     })
     .join('\n\n');
 
-  return createResponse(
+  return createDataResponse(
     `File history for ${parsed.path} (from ${parsed.commit}):\n` +
-      `${data.values.length} commits found:\n\n${historyList}`
+      `${data.values.length} commits found:\n\n${historyList}`,
+    data
   );
 }
