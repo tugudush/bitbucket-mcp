@@ -54,14 +54,22 @@ const files = [
   },
 ];
 
+let hasErrors = false;
 for (const file of files) {
   const content = readFileSync(file.path, 'utf8');
   if (!content.includes(file.find)) {
     console.error(`⚠️  Could not find version string in ${file.path}`);
+    hasErrors = true;
     continue;
   }
   writeFileSync(file.path, content.replace(file.find, file.replace), 'utf8');
   console.log(`✅ Updated ${file.path.replace(rootDir, '.')}`);
 }
 
-console.log(`\nVersion bumped to ${newVersion}`);
+if (hasErrors) {
+  console.error('\n❌ Some files were not updated. Please check manually.');
+  process.exit(1);
+}
+
+console.log(`\n✅ Version bumped to ${newVersion}`);
+console.log('   All files updated consistently.');
