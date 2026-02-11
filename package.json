@@ -1,6 +1,6 @@
 {
   "name": "@tugudush/bitbucket-mcp",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "A Model Context Protocol server for Bitbucket with read-only operations",
   "type": "module",
   "main": "build/index.js",
@@ -19,6 +19,7 @@
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
     "lf": "npm run lint && npm run format",
     "ltf": "npm run lint && npm run format && npm run typecheck",
     "ltfb": "npm run lint && npm run typecheck && npm run format && npm run build",
