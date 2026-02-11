@@ -221,7 +221,7 @@ bb_get_merge_base({ revspec: 'a..b' })    // NOT spec
 
 **Example transformation:**
 ```
-❌ BAD:  "Jerome Gomez (@jeromegomez1) from oceantg/otg-content-manager-ui"
+❌ BAD:  "John Smith (@jsmith) from acme-corp/internal-project"
 ✅ GOOD: "Current user details retrieved from workspace/repository-name"
 ```
 
