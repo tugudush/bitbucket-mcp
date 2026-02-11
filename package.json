@@ -1,6 +1,6 @@
 {
   "name": "@tugudush/bitbucket-mcp",
-  "version": "3.4.1",
+  "version": "3.5.0",
   "description": "A Model Context Protocol server for Bitbucket with read-only operations",
   "type": "module",
   "main": "build/index.js",
@@ -22,6 +22,7 @@
     "lf": "npm run lint && npm run format",
     "ltf": "npm run lint && npm run format && npm run typecheck",
     "ltfb": "npm run lint && npm run typecheck && npm run format && npm run build",
+    "vi:check": "node scripts/version-check.js",
     "vi:major": "node scripts/version-increment.js major",
     "vi:minor": "node scripts/version-increment.js minor",
     "vi:patch": "node scripts/version-increment.js patch"
