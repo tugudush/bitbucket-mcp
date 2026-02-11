@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-02-11
+
+### Added
+- **Format check script** - Added `format:check` npm script for CI validation
+  - New script: `"format:check": "prettier --check src/**/*.ts"`
+  - Enables consistent format verification in CI without modifying files
+  - Complements existing `format` script for write operations
+
+### Changed
+- **CI workflow improvements**
+  - Updated format check step to use `npm run format:check` instead of direct `npx prettier` call
+  - Improved maintainability by using npm scripts consistently across workflow
+  - Updated trigger strategy for better PR validation:
+    - Runs on push to `develop` branch (validates merged state)
+    - Runs on pull requests to both `develop` and `main` (validates before merge)
+    - Catches issues in PRs before merging instead of only after
+
+## [3.5.0] - 2026-02-11
+
+### Added
+- **Version validation script** ([#96](https://github.com/tugudush/bitbucket-mcp/pull/96))
+  - New `scripts/version-check.js` for validating version consistency across files
+  - Checks that package.json and src/version.ts have matching versions
+  - Provides clear error reporting with file location and value mismatches
+  - Accessible via `npm run vi:check` command
+
+### Changed
+- **Version increment script enhancement** ([#96](https://github.com/tugudush/bitbucket-mcp/pull/96))
+  - Enhanced `scripts/version-increment.js` with validation before incrementing
+  - Now verifies version consistency before making changes
+  - Provides better error handling and user feedback
+  - Ensures clean version management workflow
+
+### Removed
+- **Workspace template cleanup** ([#95](https://github.com/tugudush/bitbucket-mcp/pull/95))
+  - Removed `.vscode-template/` directory and all template configuration files
+  - Deleted template files: README.md, extensions.json, mcp.json, settings.json
+  - Simplified repository structure by removing example configurations
+- **Documentation cleanup** ([#96](https://github.com/tugudush/bitbucket-mcp/pull/96))
+  - Removed `docs/reviews/2026-02-08-codebase-review.md` (outdated review document)
+  - Consolidated to reduce documentation maintenance overhead
+
 ## [3.4.1] - 2026-02-10
 
 ### Fixed
