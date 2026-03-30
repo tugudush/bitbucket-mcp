@@ -12,10 +12,13 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 
 > 💡 **How to create an API Token:**
 > 1. Go to [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
-> 2. Click "Create API token"
-> 3. Enter a label (e.g., "Bitbucket MCP Server")
-> 4. Copy the generated token and use it as `BITBUCKET_API_TOKEN`
-> 5. Use your Atlassian account email as `BITBUCKET_EMAIL`
+> 2. Click "Create API token with scopes"
+> 3. Enter a label (e.g., "Bitbucket MCP"), set expiry date, and click "Next"
+> 4. Select "Bitbucket" in the app selection and click "Next"
+> 5. In the scope actions, select "Read" and in the Results per page, select 20 or hgiher
+> 6. Check all the checkboxes and click "Next"
+> 7. Copy the generated token and use it as `BITBUCKET_API_TOKEN`
+> 8. Use your Atlassian account email as `BITBUCKET_EMAIL`
 
 ## Installation
 
