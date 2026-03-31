@@ -4,6 +4,8 @@ A **read-only** Model Context Protocol (MCP) server that provides secure access 
 
 **🎯 37 tools available** | **✅ 168 unit tests** (92% coverage) | **🏗️ Modular architecture** | **📦 TOON/JSON/text output formats**
 
+[Official Documentation](https://bitbucketmcp.tugudush.com/)
+
 ## Requirements
 
 - **Code Search**: Enable at https://bitbucket.org/search for `bb_search_code` functionality
