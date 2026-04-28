@@ -28,6 +28,7 @@ export {
   handleGetPullRequestActivity,
   handleGetPullRequestCommits,
   handleGetPullRequestStatuses,
+  handleGetContext,
 } from './pullrequest.js';
 
 // Diff handlers
@@ -90,6 +91,7 @@ import {
   handleGetPullRequestActivity,
   handleGetPullRequestCommits,
   handleGetPullRequestStatuses,
+  handleGetContext,
 } from './pullrequest.js';
 import {
   handleGetPullRequestDiff,
@@ -143,6 +145,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
   bb_get_pull_request_activity: handleGetPullRequestActivity,
   bb_get_pr_commits: handleGetPullRequestCommits,
   bb_get_pr_statuses: handleGetPullRequestStatuses,
+  bb_get_context: handleGetContext,
 
   // Diff tools
   bb_get_pull_request_diff: handleGetPullRequestDiff,

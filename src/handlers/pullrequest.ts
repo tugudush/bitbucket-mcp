@@ -11,6 +11,7 @@ import {
   GetPullRequestActivitySchema,
   GetPullRequestCommitsSchema,
   GetPullRequestStatusesSchema,
+  GetContextSchema,
 } from '../schemas.js';
 import {
   makeRequest,
@@ -25,6 +26,7 @@ import type {
   BitbucketActivity,
   BitbucketCommit,
   BitbucketCommitStatus,
+  DiffstatResponse,
 } from '../types.js';
 import { createResponse, createDataResponse, ToolResponse } from './types.js';
 
@@ -425,4 +427,285 @@ export async function handleGetPullRequestStatuses(
     `Build statuses for PR #${parsed.pull_request_id} (${data.values.length} total):\n\n${statusList}`,
     data
   );
+}
+
+/**
+ * Parse a Bitbucket PR URL into workspace, repo_slug, and pull_request_id.
+ * Supports: https://bitbucket.org/{workspace}/{repo}/pull-requests/{id}
+ */
+function parseBitbucketPrUrl(
+  url: string
+): { workspace: string; repo_slug: string; pull_request_id: number } | null {
+  try {
+    const parsed = new URL(url);
+    // Normalize hostname — accept bitbucket.org and www.bitbucket.org
+    if (
+      parsed.hostname !== 'bitbucket.org' &&
+      parsed.hostname !== 'www.bitbucket.org'
+    ) {
+      return null;
+    }
+    // Path: /{workspace}/{repo}/pull-requests/{id}
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts.length >= 4 && parts[2] === 'pull-requests') {
+      const prId = parseInt(parts[3], 10);
+      if (!isNaN(prId)) {
+        return {
+          workspace: parts[0],
+          repo_slug: parts[1],
+          pull_request_id: prId,
+        };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get a curated bundle of PR context in a single call.
+ *
+ * Returns: PR metadata, diffstat summary, build/review status, and comment previews.
+ * Supports direct params, branch-based PR lookup, and Bitbucket URL parsing.
+ */
+export async function handleGetContext(args: unknown): Promise<ToolResponse> {
+  const parsed = GetContextSchema.parse(args);
+
+  // --- Resolve workspace, repo_slug, pull_request_id ---
+  let workspace: string;
+  let repo_slug: string;
+  let pull_request_id: number;
+
+  if (parsed.url) {
+    const urlParts = parseBitbucketPrUrl(parsed.url);
+    if (!urlParts) {
+      return createResponse(
+        `Error: Could not parse Bitbucket PR URL: ${parsed.url}\n` +
+          `Expected format: https://bitbucket.org/{workspace}/{repo}/pull-requests/{id}`
+      );
+    }
+    workspace = urlParts.workspace;
+    repo_slug = urlParts.repo_slug;
+    pull_request_id = urlParts.pull_request_id;
+  } else if (parsed.workspace && parsed.repo_slug) {
+    workspace = parsed.workspace;
+    repo_slug = parsed.repo_slug;
+
+    if (parsed.pull_request_id) {
+      pull_request_id = parsed.pull_request_id;
+    } else if (parsed.branch) {
+      // Look up the open PR for this branch
+      const searchUrl = addQueryParams(
+        buildApiUrl(`/repositories/${workspace}/${repo_slug}/pullrequests`),
+        {
+          q: `source.branch.name="${parsed.branch}" AND state="OPEN"`,
+          pagelen: 1,
+        }
+      );
+      const searchResult =
+        await makeRequest<BitbucketApiResponse<BitbucketPullRequest>>(
+          searchUrl
+        );
+      if (!searchResult.values || searchResult.values.length === 0) {
+        return createResponse(
+          `No open pull request found for branch "${parsed.branch}" in ${workspace}/${repo_slug}.`
+        );
+      }
+      pull_request_id = searchResult.values[0].id;
+    } else {
+      return createResponse(
+        'Error: Either pull_request_id or branch must be provided (or use url).'
+      );
+    }
+  } else {
+    return createResponse(
+      'Error: Either url, or both workspace and repo_slug, must be provided.'
+    );
+  }
+
+  const detail = parsed.detail_level || 'summary';
+  const baseUrl = `/repositories/${workspace}/${repo_slug}/pullrequests/${pull_request_id}`;
+
+  // --- Fetch PR details ---
+  const pr = await makeRequest<BitbucketPullRequest>(buildApiUrl(baseUrl));
+
+  // --- Fetch diffstat, statuses, and comments in parallel ---
+  const [diffstatData, statusData, commentData] = await Promise.all([
+    // Diffstat
+    makeRequest<DiffstatResponse>(buildApiUrl(`${baseUrl}/diffstat`)).catch(
+      () => null
+    ),
+    // Build statuses
+    makeRequest<BitbucketApiResponse<BitbucketCommitStatus>>(
+      buildApiUrl(`${baseUrl}/statuses`)
+    ).catch(() => null),
+    // Comments (first page)
+    makeRequest<BitbucketApiResponse<BitbucketComment>>(
+      addQueryParams(buildApiUrl(`${baseUrl}/comments`), {
+        pagelen: detail === 'full' ? 20 : 3,
+      })
+    ).catch(() => null),
+  ]);
+
+  // --- Build response ---
+  const lines: string[] = [];
+
+  // PR metadata
+  lines.push(`=== PR #${pr.id}: ${pr.title} ===`);
+  lines.push(`State: ${pr.state}`);
+  lines.push(`Author: ${pr.author.display_name}`);
+  lines.push(
+    `Branch: ${pr.source.branch.name} → ${pr.destination.branch.name}`
+  );
+  lines.push(`Created: ${pr.created_on}`);
+  lines.push(`Updated: ${pr.updated_on}`);
+
+  if (pr.reviewers && pr.reviewers.length > 0) {
+    lines.push(
+      `Reviewers: ${pr.reviewers.map(r => r.display_name).join(', ')}`
+    );
+  }
+
+  // PR description (full mode only)
+  if (detail === 'full' && pr.description) {
+    lines.push('');
+    lines.push('--- Description ---');
+    lines.push(pr.description);
+  }
+
+  // Diffstat summary
+  lines.push('');
+  lines.push('--- Diffstat ---');
+  if (diffstatData && diffstatData.values && diffstatData.values.length > 0) {
+    const totalAdded = diffstatData.values.reduce(
+      (sum, e) => sum + e.lines_added,
+      0
+    );
+    const totalRemoved = diffstatData.values.reduce(
+      (sum, e) => sum + e.lines_removed,
+      0
+    );
+    lines.push(
+      `${diffstatData.values.length} file(s) changed, +${totalAdded} -${totalRemoved}`
+    );
+
+    if (detail === 'full') {
+      for (const entry of diffstatData.values) {
+        const status = entry.status.toUpperCase();
+        const filePath = entry.new?.path || entry.old?.path || '(unknown)';
+        if (entry.status === 'renamed') {
+          lines.push(
+            `  ${status}: ${entry.old?.path} → ${entry.new?.path}  (+${entry.lines_added} -${entry.lines_removed})`
+          );
+        } else {
+          lines.push(
+            `  ${status}: ${filePath}  (+${entry.lines_added} -${entry.lines_removed})`
+          );
+        }
+      }
+    }
+  } else {
+    lines.push('No diffstat available.');
+  }
+
+  // Build statuses
+  lines.push('');
+  lines.push('--- Build Status ---');
+  if (statusData && statusData.values && statusData.values.length > 0) {
+    for (const s of statusData.values) {
+      const icon =
+        s.state === 'SUCCESSFUL'
+          ? '✅'
+          : s.state === 'FAILED'
+            ? '❌'
+            : s.state === 'INPROGRESS'
+              ? '🔄'
+              : '❓';
+      lines.push(
+        `${icon} ${s.name}: ${s.state}${s.description ? ` — ${s.description}` : ''}`
+      );
+    }
+  } else {
+    lines.push('No build statuses found.');
+  }
+
+  // Comments
+  lines.push('');
+  lines.push('--- Comments ---');
+  if (commentData && commentData.values && commentData.values.length > 0) {
+    const total = commentData.size || commentData.values.length;
+    lines.push(
+      `${total} comment(s) total. Showing latest ${commentData.values.length}:\n`
+    );
+    for (const comment of commentData.values) {
+      const preview = (comment.content?.raw || 'No content')
+        .split('\n')
+        .slice(0, 3)
+        .join('\n  ');
+      const inline = comment.inline
+        ? ` [${comment.inline.path}:${comment.inline.to || comment.inline.from}]`
+        : '';
+      lines.push(
+        `• ${comment.user.display_name} (${comment.created_on})${inline}:\n  ${preview}`
+      );
+    }
+  } else {
+    lines.push('No comments.');
+  }
+
+  // Build structured data for JSON/TOON output
+  const contextData = {
+    pull_request: {
+      id: pr.id,
+      title: pr.title,
+      state: pr.state,
+      author: pr.author.display_name,
+      source_branch: pr.source.branch.name,
+      destination_branch: pr.destination.branch.name,
+      created_on: pr.created_on,
+      updated_on: pr.updated_on,
+      reviewers: pr.reviewers?.map(r => r.display_name) || [],
+      ...(detail === 'full' ? { description: pr.description } : {}),
+    },
+    diffstat: diffstatData
+      ? {
+          files_changed: diffstatData.values?.length || 0,
+          lines_added:
+            diffstatData.values?.reduce((s, e) => s + e.lines_added, 0) || 0,
+          lines_removed:
+            diffstatData.values?.reduce((s, e) => s + e.lines_removed, 0) || 0,
+          ...(detail === 'full'
+            ? {
+                files: diffstatData.values?.map(e => ({
+                  path: e.new?.path || e.old?.path,
+                  status: e.status,
+                  lines_added: e.lines_added,
+                  lines_removed: e.lines_removed,
+                })),
+              }
+            : {}),
+        }
+      : null,
+    build_statuses:
+      statusData?.values?.map(s => ({
+        name: s.name,
+        state: s.state,
+        description: s.description,
+      })) || [],
+    comments: {
+      total: commentData?.size || 0,
+      showing: commentData?.values?.length || 0,
+      items:
+        commentData?.values?.map(c => ({
+          id: c.id,
+          author: c.user.display_name,
+          created_on: c.created_on,
+          content: c.content?.raw,
+          inline: c.inline || null,
+        })) || [],
+    },
+  };
+
+  return createDataResponse(lines.join('\n'), contextData);
 }
