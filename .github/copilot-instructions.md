@@ -39,7 +39,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
   bb_get_repository: handleGetRepository,
   bb_list_repositories: handleListRepositories,
   bb_get_pull_requests: handleGetPullRequests,
-  // ... 37 total tools organized by domain
+  // ... 38 total tools organized by domain
 };
 
 // src/tools.ts - Clean lookup pattern
@@ -60,21 +60,22 @@ export async function handleToolCall(request: CallToolRequest) {
 - `src/handlers/issue.ts` - Issue operations
 - `src/handlers/pipeline.ts` - Pipeline operations
 
-### Working Tools (37 total, 31 testable)
+### Working Tools (38 total, 32 testable)
 - **`bb_list_workspaces`** - Workspace discovery and exploration
 - **`bb_browse_repository`** - Repository structure navigation
 - **`bb_get_file_content`** - Line-based pagination (1-10,000 lines)
 - **`bb_search_code`** - Code search with language filtering (requires account enablement)
 - **`bb_get_pull_request_comment`** - Get a single PR comment by ID
 - **`bb_get_comment_thread`** - Get comment thread with nested replies (fetches all pages)
+- **`bb_get_context`** - Get curated PR context bundle in a single call (metadata, diffstat, statuses, comments)
 
-**Test Coverage:** 168 unit tests across 12 suites (92.2% statements), plus 31/37 integration tests verified
+**Test Coverage:** 184 unit tests across 12 suites (95.5% statements), plus 31/38 integration tests verified
 
 ## Critical Development Workflow
 
 ### Quality Pipeline (Essential)
 ```bash
-npm run ltf     # lint → typecheck → format (recommended before commits)
+npm run ltf     # lint → format → typecheck (recommended before commits)
 npm run ltfb    # lint → typecheck → format → build (full pipeline)
 npm run build   # TypeScript compilation + executable permissions
 npm run watch   # Development mode with auto-rebuild
@@ -236,9 +237,9 @@ This applies to all documentation files including README.md, test results, chang
 - **Maintainability**: Individual handler files easier to test and modify
 
 ### Comprehensive Testing (2026-02)
-- **168 unit tests across 12 suites**: All 8 handler modules + api, config, errors, output-format
-- **92.2% statement coverage**: `jest --coverage` fully operational (Jest 30)
-- **31/37 integration tools verified**: 100% success on testable tools
+- **184 unit tests across 12 suites**: All 8 handler modules + api, config, errors, output-format
+- **95.5% statement coverage**: `jest --coverage` fully operational (Jest 30)
+- **31/38 integration tools verified**: 100% success on testable tools
 - **Real-world validation**: Using actual production scenarios
 - **Dynamic ID extraction**: Pattern for extracting IDs from responses
 - **Discovery-based approach**: Sequential workspace → repo → PR → issue testing
@@ -356,8 +357,8 @@ const prId = match ? parseInt(match[1]) : null;
 ```
 
 ### Test Coverage
-- **168 unit tests across 12 suites** (92.2% statement coverage)
-- **31 out of 37 integration tools verified** (100% success on testable tools)
+- **184 unit tests across 12 suites** (95.5% statement coverage)
+- **31 out of 38 integration tools verified** (100% success on testable tools)
 - Handler tests mock `makeRequest`/`makeTextRequest` and verify formatting, errors, pagination
 - Some tools require specific repository features (issue trackers, CI/CD pipelines)
 

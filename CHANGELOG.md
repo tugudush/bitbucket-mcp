@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.1] - 2026-04-29
+
+### Changed
+- **Documentation updates** — Updated all docs to reflect current project state (38 tools, 184 tests, 95.5% coverage)
+  - Updated `.github/copilot-instructions.md` with accurate tool count, test count, and coverage metrics
+  - Updated `README.md` with `bb_get_context` tool listing, usage examples, and roadmap entry
+  - Updated `docs/test-results.md` with `bb_get_context` test result and corrected tool totals
+  - Updated `docs/bitbucket-mcp-reviews-and-ranking.md` with current version and stats
+  - Fixed `ltf` script description order in README, copilot-instructions, and PUBLISHING.md to match actual `package.json`
+
+## [3.7.0] - 2026-04-28
+
+### Added
+- **`bb_get_context` tool** — Curated PR context bundle in a single call
+  - Fetches PR metadata, diffstat summary, build/review statuses, and comment previews in parallel via `Promise.all`
+  - Three input modes: direct params, Bitbucket PR URL parsing, or branch name lookup
+  - Two detail levels: `summary` (default) and `full` (includes PR description, per-file diffstat, last 20 comments)
+  - Graceful degradation — missing diffstat/statuses/comments degrade gracefully; only PR metadata failure is fatal
+  - URL parsing supports both `https://bitbucket.org/` and `https://www.bitbucket.org/` prefixes
+  - Branch resolution uses BBQL to find open PRs by source branch name
+  - 21 new unit tests covering all input modes, error cases, and edge cases
+  - Total: 38 tools, 184 tests across 12 suites (95.5% statement coverage)
+
+### Changed
+- **Test coverage improved** — 184 tests (up from 168), 95.5% statement coverage (up from 92.2%)
+- **Tool count** — 38 tools total (up from 37)
+
+## [3.6.2] - 2026-02-11
+
+### Added
+- **Official documentation link** — Added link to [https://bitbucketmcp.tugudush.com/](https://bitbucketmcp.tugudush.com/) in README header
+
+## [3.6.1] - 2026-02-11
+
+### Changed
+- **API token instructions** — Updated README with detailed step-by-step API token creation guide
+  - Added numbered steps for creating scoped API tokens via Atlassian account settings
+  - Clarified scope selection (Read access, 20+ results per page)
+  - Added note about selecting "Bitbucket" in app selection step
+
 ## [3.6.0] - 2026-02-11
 
 ### Added

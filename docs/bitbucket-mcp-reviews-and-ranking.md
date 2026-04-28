@@ -36,14 +36,14 @@ Six Bitbucket MCP server implementations were evaluated across architecture, fea
 | **Forks** | N/A | 44 | 48 | 8 | 33 | 0 |
 | **Target Platform** | Cloud | Cloud | Cloud + Server | Cloud + Server | Server (on-prem) | Cloud |
 | **Language** | TypeScript | TypeScript | TypeScript | TypeScript | TypeScript | TypeScript |
-| **Total Tools** | 37 | 6 (generic) | ~30+ | ~35+ | 14 | ~15 |
+| **Total Tools** | 38 | 6 (generic) | ~30+ | ~35+ | 14 | ~15 |
 | **Read/Write** | Read-only | Read + Write | Read + Write | Read + Write | Read + Write | Read + Write |
 | **Input Validation** | Zod schemas | Zod schemas | Manual/Zod | Axios-based | Manual | Zod |
 | **Architecture** | Modular handlers | Controllers/Services/CLI | Monolithic (single file) | Handlers + Tools | Monolithic (single file) | Modular (tools/) |
 | **Output Formats** | text, JSON, TOON | text, TOON | text | text | text | text |
 | **JMESPath Filtering** | Yes | Yes | No | No | No | No |
-| **Test Suite** | 168 unit + 31 integration | Jest configured | Jest configured | None | 1 test file | None |
-| **Test Coverage** | 92.2% statements | Present but unknown % | Present but unknown % | None | Minimal | None |
+| **Test Suite** | 184 unit + 31 integration | Jest configured | Jest configured | None | 1 test file | None |
+| **Test Coverage** | 95.5% statements | Present but unknown % | Present but unknown % | None | Minimal | None |
 | **npm Published** | Yes (`@tugudush/bitbucket-mcp`) | Yes (`@aashari/...`) | Yes (`bitbucket-mcp`) | Yes (`@nexus2520/...`) | No | No |
 | **Docker Support** | No | No | No | No | Yes | No |
 | **Smithery Listing** | No | No | No | No | Yes | No |
@@ -69,7 +69,7 @@ Six Bitbucket MCP server implementations were evaluated across architecture, fea
 ### 1. @tugudush/bitbucket-mcp (This Project)
 
 **Repository**: This codebase
-**Version**: 3.4.0 (unreleased) | **Platform**: Bitbucket Cloud | **Stars**: N/A (private)
+**Version**: 3.7.0 | **Platform**: Bitbucket Cloud | **Stars**: N/A (private)
 
 #### Architecture — ★★★★★
 
@@ -83,7 +83,7 @@ The most architecturally mature implementation reviewed:
 
 #### Features — ★★★★★
 
-- **37 total tools** (31 testable) — the most comprehensive read-only coverage
+- **38 total tools** (32 testable) — the most comprehensive read-only coverage
 - Covers repositories, PRs, commits, diffs, branches, tags, pipelines, issues, workspaces, code search, file content, file history, user info
 - **3 output formats** on all tools: `text` (default), `json` (pretty-printed), `toon` (30-60% token savings)
 - **JMESPath filtering** (`filter` parameter) for powerful response data transformation before format conversion
@@ -104,9 +104,9 @@ The most architecturally mature implementation reviewed:
 
 #### Testing — ★★★★★
 
-- **168 unit tests across 12 suites** — by far the most comprehensive
-- **92.2% statement coverage** with Jest 30
-- **31/37 integration tests** verified against real Bitbucket API
+- **184 unit tests across 12 suites** — by far the most comprehensive
+- **95.5% statement coverage** with Jest 30
+- **31/38 integration tests** verified against real Bitbucket API
 - Handler mocks for `makeRequest`/`makeTextRequest` with formatting and pagination verification
 - **Copilot instruction file** (`.github/copilot-instructions.md`) documenting all patterns
 
@@ -481,12 +481,12 @@ The most architecturally mature implementation reviewed:
 
 ### Why Our Project Leads
 
-1. **Best-in-class testing** — 168 unit tests with 92.2% coverage is unmatched in this space
+1. **Best-in-class testing** — 184 unit tests with 95.5% coverage is unmatched in this space
 2. **Cleanest architecture** — modular handler registry pattern is maintainable and extensible
-3. **TOON + JMESPath support** — 3 output formats (text/json/toon) with JMESPath filtering on all 37 tools; configurable global default via `BITBUCKET_DEFAULT_FORMAT` env var
+3. **TOON + JMESPath support** — 3 output formats (text/json/toon) with JMESPath filtering on all 38 tools; configurable global default via `BITBUCKET_DEFAULT_FORMAT` env var
 4. **Production-grade error handling** — custom error classes with retry logic
 5. **Read-only safety** — zero risk of accidental data mutation, enforced at runtime
-6. **Comprehensive Bitbucket Cloud coverage** — 37 tools covering virtually all read operations
+6. **Comprehensive Bitbucket Cloud coverage** — 38 tools covering virtually all read operations
 
 ### Where Others Excel
 
@@ -504,7 +504,7 @@ Based on this review, features worth considering:
 2. **Bitbucket Server support** (like pdogra1299 and MatanYemini)
 3. **HTTP transport mode** (like aashari) for debugging and multi-client support
 4. **CLI mode** for standalone testing without MCP client
-5. ~~**TOON/JMESPath-style response filtering** for token optimization~~ — ✅ **Implemented in v3.4.0** (TOON output format + JMESPath filtering on all 37 tools)
+5. ~~**TOON/JMESPath-style response filtering** for token optimization~~ — ✅ **Implemented in v3.4.0** (TOON output format + JMESPath filtering on all 38 tools)
 6. **Docker support** for containerized deployments
 7. **npm/Smithery publication** for wider distribution
 8. **Generic fallback tool** (like aashari's `bb_get`) for API endpoints not covered by specific tools
