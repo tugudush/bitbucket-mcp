@@ -479,3 +479,40 @@ export const SearchCodeSchema = z.object({
     .optional()
     .describe(`Number of items per page (max ${API_CONSTANTS.MAX_PAGE_SIZE})`),
 });
+
+// --- Context bundle schema ---
+
+export const GetContextSchema = z.object({
+  workspace: z
+    .string()
+    .optional()
+    .describe('The workspace or username (required if url is not provided)'),
+  repo_slug: z
+    .string()
+    .optional()
+    .describe('The repository name (required if url is not provided)'),
+  pull_request_id: z
+    .number()
+    .optional()
+    .describe(
+      'The pull request ID. If omitted, branch must be provided to look up the open PR.'
+    ),
+  branch: z
+    .string()
+    .optional()
+    .describe(
+      'Branch name to look up the open pull request for. Ignored if pull_request_id is provided.'
+    ),
+  url: z
+    .string()
+    .optional()
+    .describe(
+      'A Bitbucket pull request URL (e.g. https://bitbucket.org/workspace/repo/pull-requests/42). If provided, workspace, repo_slug, and pull_request_id are extracted automatically.'
+    ),
+  detail_level: z
+    .enum(['summary', 'full'])
+    .optional()
+    .describe(
+      'Controls response verbosity: "summary" (default) returns counts and previews; "full" includes PR description, per-file diffstat, and last 20 comments.'
+    ),
+});
