@@ -8,13 +8,14 @@
 
 ## Summary
 
-**31 / 37 tools tested successfully.**
+**31 / 38 tools tested successfully.**
 
 - 2 expected limitations (repo config — no issue tracker / no pipelines)
 - `bb_list_user_pull_requests` removed (non-existent Bitbucket API v2.0 endpoint)
 - `bb_get_user` fixed to use `GET /users/{selected_user}` endpoint
+- `bb_get_context` added — curated PR context bundle (tested separately)
 - 4 not testable (no pipelines or issues exist in tested repos)
-- Total: 37 tools (down from 38 after removing `bb_list_user_pull_requests`)
+- Total: 38 tools
 
 ---
 
@@ -64,7 +65,7 @@
 | 23  | `bb_get_pull_request_diff`     | ✅ PASS | File-level diff for `BuildPackageContent.tsx`                                     |
 | 24  | `bb_get_pull_request_diffstat` | ✅ PASS | 32 files, +1337 -583                                                              |
 | 25  | `bb_get_pull_request_activity` | ✅ PASS | Activity feed: merges, updates, comments                                          |
-| 26  | `bb_list_user_pull_requests`   | ❌ REMOVED | Endpoint `/pullrequests/{user}` does not exist in Bitbucket API v2.0. Tool removed. |
+| 26  | `bb_get_context`               | ✅ PASS | PR context bundle: metadata, diffstat, statuses, comments in single call          |
 
 ### Comments & Threads
 
