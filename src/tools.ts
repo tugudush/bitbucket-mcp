@@ -49,6 +49,7 @@ import {
   SearchRepositoriesSchema,
   SearchCodeSchema,
   GetWorkspaceSchema,
+  GetContextSchema,
   OutputOptionsSchema,
 } from './schemas.js';
 import { toolHandlers } from './handlers/index.js';
@@ -288,6 +289,12 @@ export function getToolDefinitions(): Tool[] {
       name: 'bb_get_workspace',
       description: 'Get information about a workspace',
       inputSchema: toolSchema(GetWorkspaceSchema),
+    },
+    {
+      name: 'bb_get_context',
+      description:
+        'Get a curated bundle of PR context in a single call: PR metadata, diffstat summary, build/review status, and comment previews. Accepts a Bitbucket PR URL, or workspace/repo with pull_request_id or branch. Use detail_level "full" for PR description, per-file diffstat, and last 20 comments.',
+      inputSchema: toolSchema(GetContextSchema),
     },
   ];
 }
