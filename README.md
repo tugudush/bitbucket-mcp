@@ -2,7 +2,7 @@
 
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Code.
 
-**🎯 37 tools available** | **✅ 168 unit tests** (92% coverage) | **🏗️ Modular architecture** | **📦 TOON/JSON/text output formats**
+**🎯 38 tools available** | **✅ 184 unit tests** (95.5% coverage) | **🏗️ Modular architecture** | **📦 TOON/JSON/text output formats**
 
 [Official Documentation](https://bitbucketmcp.tugudush.com/)
 
@@ -193,7 +193,7 @@ Or add to `.mcp.json` (project scope):
 - `bb_get_file_content` - Read files with pagination (1-10,000 lines)
 - `bb_get_file_history` - Get commit history for specific files
 
-### 🔀 Pull Requests (10 tools)
+### 🔀 Pull Requests (11 tools)
 - `bb_get_pull_requests` - List all pull requests
 - `bb_get_pull_request` - Get detailed PR information
 - `bb_get_pull_request_comments` - List all comments on a PR
@@ -204,6 +204,7 @@ Or add to `.mcp.json` (project scope):
 - `bb_get_pull_request_diffstat` - Get per-file change statistics
 - `bb_get_pr_commits` - List commits in a PR
 - `bb_get_pr_statuses` - Get CI/CD build statuses for a PR
+- `bb_get_context` - Get curated PR context bundle in a single call (metadata, diffstat, statuses, comments)
 
 ### 🌿 Branches & Commits (8 tools)
 - `bb_get_branches` - List all branches
@@ -236,11 +237,11 @@ Or add to `.mcp.json` (project scope):
 - `bb_get_user` - Get user information by username or UUID
 - `bb_get_current_user` - Get authenticated user information
 
-**Total: 37 tools across 8 categories**
+**Total: 38 tools across 8 categories**
 
 ## Output Formats & Filtering
 
-All 37 tools support flexible output formatting and data filtering via two optional parameters:
+All 38 tools support flexible output formatting and data filtering via two optional parameters:
 
 ### Output Format (`output_format`)
 
@@ -336,6 +337,9 @@ To set a default output format for all tools without specifying it per-call, set
 - "Get the comment thread for comment #12345678 on PR #123"
 - "Show me the diff for PR #123"
 - "Get build statuses for PR #123"
+- "Get full context for PR #123 in myworkspace/myrepo"
+- "Get PR context from URL https://bitbucket.org/myworkspace/myrepo/pull-requests/123"
+- "Get the open PR for branch feature/my-feature in myworkspace/myrepo"
 
 **Branches & Commits:**
 - "List all branches in myworkspace/myrepo"
@@ -355,7 +359,7 @@ To set a default output format for all tools without specifying it per-call, set
 ```bash
 npm run build    # TypeScript compilation
 npm run watch    # Development mode with auto-rebuild
-npm run ltf      # Lint → Typecheck → Format (recommended before commits)
+npm run ltf      # Lint → Format → Typecheck (recommended before commits)
 npm run ltfb     # Lint → Typecheck → Format → Build (full pipeline)
 node build/index.js  # Test server startup
 ```
@@ -363,14 +367,14 @@ node build/index.js  # Test server startup
 ### Testing
 The MCP server includes comprehensive test coverage:
 
-**Unit Tests:** 168 tests across 12 test suites (92.2% statement coverage)
+**Unit Tests:** 184 tests across 12 test suites (95.5% statement coverage)
 - All 8 handler modules tested: repository, pullrequest, commit, diff, issue, pipeline, search, workspace
 - Output format conversion tests: text, JSON, TOON, JMESPath filtering, edge cases
 - Core modules tested: api, config, errors
 - Uses mocked `makeRequest`/`makeTextRequest` with thorough edge case coverage
 - Run `npm test` or `jest --coverage` for full coverage report
 
-**Integration Tests:** 31 out of 37 tools verified (100% success rate on testable tools)
+**Integration Tests:** 31 out of 38 tools verified (100% success rate on testable tools)
 - Uses discovery-based approach with dynamic ID extraction
 - Validates all major Bitbucket operations with real-world scenarios
 
@@ -425,31 +429,32 @@ See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for det
 
 ## Development Status
 
-✅ **Production Ready** - 168 unit tests (92% coverage), 31/37 integration tests verified
+✅ **Production Ready** - 184 unit tests (95.5% coverage), 31/38 integration tests verified
 
-**Recent Updates (2026-02):**
+**Recent Updates (2026-04):**
+- ✅ **`bb_get_context` tool** — curated PR context bundle in a single call (metadata, diffstat, statuses, comments)
 - ✅ **TOON output format** — compact tabular format reducing LLM token consumption by 30-60%
 - ✅ **JSON output format** — pretty-printed structured data for programmatic use
-- ✅ **JMESPath filtering** — powerful data transformation on all 37 tools via `filter` parameter
-- ✅ Comprehensive unit tests for all 8 handler modules (168 tests, 12 suites)
+- ✅ **JMESPath filtering** — powerful data transformation on all 38 tools via `filter` parameter
+- ✅ Comprehensive unit tests for all 8 handler modules (184 tests, 12 suites)
 - ✅ Jest coverage tooling fixed — `jest --coverage` fully operational
 - ✅ Repository search uses server-side BBQL filtering (no longer limited to single page)
 - ✅ Comment thread pagination fetches all pages for large PRs via `fetchAllPages()`
 - ✅ Fixed `bb_get_user` to use correct `GET /users/{selected_user}` endpoint
 - ✅ Removed `bb_list_user_pull_requests` (non-existent Bitbucket API v2.0 endpoint)
-- ✅ 37 tools covering all major Bitbucket operations
+- ✅ 38 tools covering all major Bitbucket operations
 - ✅ Type-safe with Zod validation and TypeScript interfaces
 
 We welcome contributions and feedback!
 
 ## API Coverage
 
-The server implements **37 tools** covering all major Bitbucket Cloud API v2.0 endpoints (read-only):
+The server implements **38 tools** covering all major Bitbucket Cloud API v2.0 endpoints (read-only):
 
 - **Workspaces API** - Workspace discovery and information
 - **Repositories API** - Repository listing, details, browsing, and search
 - **Source API** - File content access with pagination, file history
-- **Pull Requests API** - PR management, comments, threads, activity, diffs, commits, statuses
+- **Pull Requests API** - PR management, comments, threads, activity, diffs, commits, statuses, context bundles
 - **Branches API** - Branch listing, details, and comparison
 - **Commits API** - Commit history, details, and statuses
 - **Tags API** - Tag listing and details
@@ -497,11 +502,12 @@ You can also run `npm fund` in your project to see all funding information.
 
 Future enhancements (all read-only):
 
-- ✅ ~~37 comprehensive tools~~ **COMPLETE**
+- ✅ ~~38 comprehensive tools~~ **COMPLETE**
 - ✅ ~~Comment threads with nested replies~~ **COMPLETE**
 - ✅ ~~Comprehensive test suite~~ **COMPLETE**
 - ✅ ~~Modular handler architecture~~ **COMPLETE**
 - ✅ ~~TOON/JSON output formats + JMESPath filtering~~ **COMPLETE**
+- ✅ ~~PR context bundle (`bb_get_context`)~~ **COMPLETE**
 - Repository statistics and analytics
 - Enhanced search capabilities with more filter options
 - Webhook information retrieval (read-only)

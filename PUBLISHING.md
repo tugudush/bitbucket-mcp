@@ -15,7 +15,7 @@ Simple guide to publish your package to NPM and create GitHub releases.
 ### 1. Prepare Your Code
 ```bash
 # Build and test your package
-npm run ltf        # lint, typecheck, format
+npm run ltf        # lint, format, typecheck
 npm run build      # compile TypeScript
 npm test           # run tests
 ```
