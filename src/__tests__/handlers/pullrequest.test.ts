@@ -12,6 +12,7 @@ import {
   handleGetPullRequestActivity,
   handleGetPullRequestCommits,
   handleGetPullRequestStatuses,
+  handleGetContext,
 } from '../../handlers/pullrequest.js';
 
 // Mock the API module
@@ -441,6 +442,353 @@ describe('Pull Request Handlers', () => {
       });
 
       expect(result.content[0].text).toContain('No build statuses');
+    });
+  });
+
+  describe('handleGetContext', () => {
+    const mockPR = {
+      id: 42,
+      title: 'Test PR',
+      description: 'PR description text',
+      state: 'OPEN',
+      author: { display_name: 'Alice' },
+      source: { branch: { name: 'feature/test' } },
+      destination: { branch: { name: 'develop' } },
+      reviewers: [{ display_name: 'Bob' }, { display_name: 'Charlie' }],
+      created_on: '2024-01-01T00:00:00Z',
+      updated_on: '2024-01-02T00:00:00Z',
+    };
+
+    const mockDiffstat = {
+      values: [
+        {
+          status: 'modified',
+          lines_added: 10,
+          lines_removed: 5,
+          new: { path: 'src/file.ts' },
+          old: { path: 'src/file.ts' },
+        },
+        {
+          status: 'added',
+          lines_added: 20,
+          lines_removed: 0,
+          new: { path: 'src/new.ts' },
+        },
+      ],
+    };
+
+    const mockStatuses = {
+      values: [
+        {
+          key: 'build',
+          name: 'CI Build',
+          state: 'SUCCESSFUL',
+          description: 'Passed',
+        },
+        {
+          key: 'test',
+          name: 'Tests',
+          state: 'FAILED',
+          description: 'Failed',
+        },
+      ],
+    };
+
+    const mockComments = {
+      size: 5,
+      values: [
+        {
+          id: 1,
+          content: { raw: 'Looks good!' },
+          user: { display_name: 'Reviewer1' },
+          created_on: '2024-01-01T12:00:00Z',
+        },
+        {
+          id: 2,
+          content: { raw: 'Fix this line' },
+          user: { display_name: 'Reviewer2' },
+          created_on: '2024-01-01T13:00:00Z',
+          inline: { path: 'src/file.ts', to: 10 },
+        },
+      ],
+    };
+
+    it('should return context with direct params in summary mode', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+      });
+
+      expect(result.content[0].text).toContain('PR #42: Test PR');
+      expect(result.content[0].text).toContain('State: OPEN');
+      expect(result.content[0].text).toContain('Alice');
+      expect(result.content[0].text).toContain('feature/test → develop');
+      expect(result.content[0].text).toContain('Bob, Charlie');
+      expect(result.content[0].text).toContain('2 file(s) changed, +30 -5');
+      expect(result.content[0].text).toContain('✅');
+      expect(result.content[0].text).toContain('❌');
+      expect(result.content[0].text).toContain('Looks good!');
+      // Summary mode should NOT include per-file diffstat
+      expect(result.content[0].text).not.toContain('MODIFIED: src/file.ts');
+      // Summary mode should NOT include description
+      expect(result.content[0].text).not.toContain('PR description text');
+      expect(result._data).toBeDefined();
+    });
+
+    it('should return full context with detail_level full', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+        detail_level: 'full',
+      });
+
+      expect(result.content[0].text).toContain('PR description text');
+      expect(result.content[0].text).toContain('MODIFIED: src/file.ts');
+      expect(result.content[0].text).toContain('ADDED: src/new.ts');
+      expect(result.content[0].text).toContain('Fix this line');
+      expect(result.content[0].text).toContain('[src/file.ts:10]');
+    });
+
+    it('should parse Bitbucket PR URL', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        url: 'https://bitbucket.org/myworkspace/myrepo/pull-requests/42',
+      });
+
+      expect(result.content[0].text).toContain('PR #42: Test PR');
+      // Verify the correct API URL was built
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '/repositories/myworkspace/myrepo/pullrequests/42'
+        )
+      );
+    });
+
+    it('should parse www.bitbucket.org URL', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        url: 'https://www.bitbucket.org/ws/repo/pull-requests/99',
+      });
+
+      expect(result.content[0].text).toContain('PR #42');
+    });
+
+    it('should return error for invalid URL', async () => {
+      const result = await handleGetContext({
+        url: 'https://github.com/user/repo/pull/1',
+      });
+
+      expect(result.content[0].text).toContain(
+        'Could not parse Bitbucket PR URL'
+      );
+    });
+
+    it('should return error for malformed URL', async () => {
+      const result = await handleGetContext({
+        url: 'not-a-url',
+      });
+
+      expect(result.content[0].text).toContain(
+        'Could not parse Bitbucket PR URL'
+      );
+    });
+
+    it('should look up PR by branch name', async () => {
+      const searchResult = { values: [{ id: 42 }] };
+      mockMakeRequest
+        .mockResolvedValueOnce(searchResult) // branch search
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        branch: 'feature/test',
+      });
+
+      expect(result.content[0].text).toContain('PR #42: Test PR');
+    });
+
+    it('should return error when no open PR found for branch', async () => {
+      mockMakeRequest.mockResolvedValueOnce({ values: [] });
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        branch: 'feature/no-pr',
+      });
+
+      expect(result.content[0].text).toContain('No open pull request found');
+      expect(result.content[0].text).toContain('feature/no-pr');
+    });
+
+    it('should return error when neither pull_request_id nor branch provided', async () => {
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+      });
+
+      expect(result.content[0].text).toContain(
+        'Either pull_request_id or branch must be provided'
+      );
+    });
+
+    it('should return error when workspace/repo_slug missing and no URL', async () => {
+      const result = await handleGetContext({});
+
+      expect(result.content[0].text).toContain(
+        'Either url, or both workspace and repo_slug'
+      );
+    });
+
+    it('should handle missing diffstat gracefully', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockRejectedValueOnce(new Error('API error')) // diffstat fails
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+      });
+
+      expect(result.content[0].text).toContain('PR #42');
+      expect(result.content[0].text).toContain('No diffstat available');
+    });
+
+    it('should handle missing statuses gracefully', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockRejectedValueOnce(new Error('API error')) // statuses fail
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+      });
+
+      expect(result.content[0].text).toContain('PR #42');
+      expect(result.content[0].text).toContain('No build statuses found');
+    });
+
+    it('should handle missing comments gracefully', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockRejectedValueOnce(new Error('API error')); // comments fail
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+      });
+
+      expect(result.content[0].text).toContain('PR #42');
+      expect(result.content[0].text).toContain('No comments');
+    });
+
+    it('should handle renamed files in diffstat', async () => {
+      const renamedDiffstat = {
+        values: [
+          {
+            status: 'renamed',
+            lines_added: 2,
+            lines_removed: 2,
+            old: { path: 'src/old.ts' },
+            new: { path: 'src/new.ts' },
+          },
+        ],
+      };
+
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(renamedDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+        detail_level: 'full',
+      });
+
+      expect(result.content[0].text).toContain(
+        'RENAMED: src/old.ts → src/new.ts'
+      );
+    });
+
+    it('should include structured data for JSON output', async () => {
+      mockMakeRequest
+        .mockResolvedValueOnce(mockPR)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+      });
+
+      const data = result._data as Record<string, unknown>;
+      expect(data).toBeDefined();
+      expect(data.pull_request).toBeDefined();
+      expect((data.pull_request as Record<string, unknown>).id).toBe(42);
+      expect(data.diffstat).toBeDefined();
+      expect((data.diffstat as Record<string, unknown>).files_changed).toBe(2);
+      expect(data.build_statuses).toBeDefined();
+      expect(data.comments).toBeDefined();
+      expect((data.comments as Record<string, unknown>).total).toBe(5);
+    });
+
+    it('should handle PR with no reviewers', async () => {
+      const prNoReviewers = { ...mockPR, reviewers: undefined };
+      mockMakeRequest
+        .mockResolvedValueOnce(prNoReviewers)
+        .mockResolvedValueOnce(mockDiffstat)
+        .mockResolvedValueOnce(mockStatuses)
+        .mockResolvedValueOnce(mockComments);
+
+      const result = await handleGetContext({
+        workspace: 'ws',
+        repo_slug: 'repo',
+        pull_request_id: 42,
+      });
+
+      expect(result.content[0].text).toContain('PR #42');
+      expect(result.content[0].text).not.toContain('Reviewers:');
     });
   });
 });
