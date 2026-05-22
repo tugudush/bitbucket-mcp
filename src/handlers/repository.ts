@@ -33,30 +33,69 @@ import { BitbucketApiError } from '../errors.js';
 import { createResponse, createDataResponse, ToolResponse } from './types.js';
 
 /**
+ * Return true only for 404 errors — used to continue the resolution chain
+ * without swallowing real failures (401, 403, 429, 500, network errors, etc.).
+ */
+function isNotFound(err: unknown): boolean {
+  return err instanceof BitbucketApiError && err.status === 404;
+}
+
+/**
  * Resolve a git reference (branch, tag, or commit SHA) to a commit SHA.
- * Uses the /commit/{revision} endpoint which handles all ref types uniformly.
+ *
+ * Lookup order:
+ *   1. /refs/branches/{ref}  — handles branch names with or without "/"
+ *   2. /refs/tags/{ref}      — handles tag names
+ *   3. /commit/{ref}         — handles bare commit SHAs and any other revisions
+ *
+ * Only 404 responses are suppressed at each step; all other errors are re-thrown
+ * so the caller sees auth failures, rate-limit errors, and network problems.
  *
  * @param workspace - The Bitbucket workspace
  * @param repo_slug - The repository slug
  * @param ref - Branch name, tag name, or commit SHA
- * @returns The resolved commit SHA, or null if resolution fails
+ * @returns The resolved full commit SHA, or null if the ref was not found via any path
  */
 async function resolveRefToCommitSha(
   workspace: string,
   repo_slug: string,
   ref: string
 ): Promise<string | null> {
+  const base = `/repositories/${workspace}/${repo_slug}`;
+
+  // 1. Try branch lookup — this is the only path that reliably handles names containing "/"
   try {
-    // The /commit/{revision} endpoint resolves branches, tags, and commit SHAs uniformly
-    const commitUrl = buildApiUrl(
-      `/repositories/${workspace}/${repo_slug}/commit/${encodeURIComponent(ref)}`
+    const branchUrl = buildApiUrl(
+      `${base}/refs/branches/${encodeURIComponent(ref)}`
     );
-    const commitData = await makeRequest<{ hash: string }>(commitUrl);
-    return commitData.hash;
-  } catch {
-    // If resolution fails, return null to let caller handle fallback
-    return null;
+    const branchData = await makeRequest<BitbucketBranchDetailed>(branchUrl);
+    const branchHash = branchData?.target?.hash;
+    if (branchHash) return branchHash;
+  } catch (err) {
+    if (!isNotFound(err)) throw err;
   }
+
+  // 2. Try tag lookup
+  try {
+    const tagUrl = buildApiUrl(`${base}/refs/tags/${encodeURIComponent(ref)}`);
+    const tagData = await makeRequest<BitbucketTag>(tagUrl);
+    const tagHash = tagData?.target?.hash;
+    if (tagHash) return tagHash;
+  } catch (err) {
+    if (!isNotFound(err)) throw err;
+  }
+
+  // 3. Try direct commit endpoint (bare SHAs and other revision forms)
+  try {
+    const commitUrl = buildApiUrl(`${base}/commit/${encodeURIComponent(ref)}`);
+    const commitData = await makeRequest<{ hash: string }>(commitUrl);
+    const commitHash = commitData?.hash;
+    if (commitHash) return commitHash;
+  } catch (err) {
+    if (!isNotFound(err)) throw err;
+  }
+
+  return null;
 }
 
 /**
@@ -231,8 +270,17 @@ export async function handleBrowseRepository(
       url = buildApiUrl(
         `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${commitSha}/${encodedPath}`
       );
+    } else if (ref.includes('/')) {
+      // Slash-containing refs are known to fail with direct /src/{encodedRef}/... URLs.
+      // Resolution already tried branch, tag, and commit endpoints — surface a clear error.
+      throw new BitbucketApiError(
+        404,
+        'Not Found',
+        `Could not resolve ref '${ref}' in repository ${parsed.workspace}/${parsed.repo_slug}`,
+        `Branch, tag, or commit not found. Use bb_get_branches to list available branches.`
+      );
     } else {
-      // If resolution fails, fall back to trying the ref directly
+      // For non-slash refs, fall back to trying the ref directly as a last resort
       const encodedRef = encodeURIComponent(ref);
       url = buildApiUrl(
         `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedPath}`
@@ -334,8 +382,17 @@ export async function handleGetFileContent(
     url = buildApiUrl(
       `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${commitSha}/${encodedFilePath}`
     );
+  } else if (ref.includes('/')) {
+    // Slash-containing refs are known to fail with direct /src/{encodedRef}/... URLs.
+    // Resolution already tried branch, tag, and commit endpoints — surface a clear error.
+    throw new BitbucketApiError(
+      404,
+      'Not Found',
+      `Could not resolve ref '${ref}' in repository ${parsed.workspace}/${parsed.repo_slug}`,
+      `Branch, tag, or commit not found. If you have the PR head commit SHA, pass it as 'ref' instead of the branch name.`
+    );
   } else {
-    // If resolution fails, fall back to trying the ref directly
+    // For non-slash refs, fall back to trying the ref directly as a last resort
     const encodedRef = encodeURIComponent(ref);
     url = buildApiUrl(
       `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedFilePath}`

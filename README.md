@@ -2,7 +2,7 @@
 
 A **read-only** Model Context Protocol (MCP) server that provides secure access to Bitbucket repositories, pull requests, issues, and more. Integrates seamlessly with VS Code GitHub Copilot, Cursor, and Claude Code.
 
-**🎯 38 tools available** | **✅ 184 unit tests** (95.5% coverage) | **🏗️ Modular architecture** | **📦 TOON/JSON/text output formats**
+**🎯 38 tools available** | **✅ 189 unit tests** (92.9% overall, 95.5% core src coverage) | **🏗️ Modular architecture** | **📦 TOON/JSON/text output formats**
 
 [Official Documentation](https://bitbucketmcp.tugudush.com/)
 
@@ -367,7 +367,7 @@ node build/index.js  # Test server startup
 ### Testing
 The MCP server includes comprehensive test coverage:
 
-**Unit Tests:** 184 tests across 12 test suites (95.5% statement coverage)
+**Unit Tests:** 189 tests across 12 test suites (92.9% overall, 95.5% on core src statement coverage)
 - All 8 handler modules tested: repository, pullrequest, commit, diff, issue, pipeline, search, workspace
 - Output format conversion tests: text, JSON, TOON, JMESPath filtering, edge cases
 - Core modules tested: api, config, errors
@@ -429,14 +429,14 @@ See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for det
 
 ## Development Status
 
-✅ **Production Ready** - 184 unit tests (95.5% coverage), 31/38 integration tests verified
+✅ **Production Ready** - 189 unit tests (92.9% overall, 95.5% on core src coverage), 31/38 integration tests verified
 
 **Recent Updates (2026-04):**
 - ✅ **`bb_get_context` tool** — curated PR context bundle in a single call (metadata, diffstat, statuses, comments)
 - ✅ **TOON output format** — compact tabular format reducing LLM token consumption by 30-60%
 - ✅ **JSON output format** — pretty-printed structured data for programmatic use
 - ✅ **JMESPath filtering** — powerful data transformation on all 38 tools via `filter` parameter
-- ✅ Comprehensive unit tests for all 8 handler modules (184 tests, 12 suites)
+- ✅ Comprehensive unit tests for all 8 handler modules (189 tests, 12 suites)
 - ✅ Jest coverage tooling fixed — `jest --coverage` fully operational
 - ✅ Repository search uses server-side BBQL filtering (no longer limited to single page)
 - ✅ Comment thread pagination fetches all pages for large PRs via `fetchAllPages()`

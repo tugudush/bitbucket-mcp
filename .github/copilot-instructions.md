@@ -69,7 +69,7 @@ export async function handleToolCall(request: CallToolRequest) {
 - **`bb_get_comment_thread`** - Get comment thread with nested replies (fetches all pages)
 - **`bb_get_context`** - Get curated PR context bundle in a single call (metadata, diffstat, statuses, comments)
 
-**Test Coverage:** 184 unit tests across 12 suites (95.5% statements), plus 31/38 integration tests verified
+**Test Coverage:** 189 unit tests across 12 suites (92.9% overall statements, 95.5% on core `src`), plus 31/38 integration tests verified
 
 ## Critical Development Workflow
 
@@ -237,8 +237,8 @@ This applies to all documentation files including README.md, test results, chang
 - **Maintainability**: Individual handler files easier to test and modify
 
 ### Comprehensive Testing (2026-02)
-- **184 unit tests across 12 suites**: All 8 handler modules + api, config, errors, output-format
-- **95.5% statement coverage**: `jest --coverage` fully operational (Jest 30)
+- **189 unit tests across 12 suites**: All 8 handler modules + api, config, errors, output-format
+- **92.9% overall statement coverage (95.5% on core `src`)**: `jest --coverage` fully operational (Jest 30)
 - **31/38 integration tools verified**: 100% success on testable tools
 - **Real-world validation**: Using actual production scenarios
 - **Dynamic ID extraction**: Pattern for extracting IDs from responses
@@ -357,7 +357,7 @@ const prId = match ? parseInt(match[1]) : null;
 ```
 
 ### Test Coverage
-- **184 unit tests across 12 suites** (95.5% statement coverage)
+- **189 unit tests across 12 suites** (92.9% overall statements, 95.5% on core `src`)
 - **31 out of 38 integration tools verified** (100% success on testable tools)
 - Handler tests mock `makeRequest`/`makeTextRequest` and verify formatting, errors, pagination
 - Some tools require specific repository features (issue trackers, CI/CD pipelines)
