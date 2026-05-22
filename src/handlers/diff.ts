@@ -92,8 +92,9 @@ export async function handleGetPullRequestDiffstat(
   const data = await makeRequest<DiffstatResponse>(url);
 
   if (!data.values || data.values.length === 0) {
-    return createResponse(
-      `No changes found in pull request #${parsed.pull_request_id}.`
+    return createDataResponse(
+      `No changes found in pull request #${parsed.pull_request_id}.`,
+      data
     );
   }
 
@@ -162,7 +163,10 @@ export async function handleGetDiffstat(args: unknown): Promise<ToolResponse> {
   const data = await makeRequest<DiffstatResponse>(url);
 
   if (!data.values || data.values.length === 0) {
-    return createResponse(`No changes found for spec: ${parsed.spec}`);
+    return createDataResponse(
+      `No changes found for spec: ${parsed.spec}`,
+      data
+    );
   }
 
   const totalAdded = data.values.reduce((sum, e) => sum + e.lines_added, 0);
