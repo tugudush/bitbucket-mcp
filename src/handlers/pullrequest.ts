@@ -280,7 +280,7 @@ export async function handleGetPullRequestActivity(
   const parsed = GetPullRequestActivitySchema.parse(args);
   const params = {
     page: parsed.page,
-    pagelen: parsed.pagelen,
+    pagelen: parsed.pagelen ? Math.min(parsed.pagelen, 50) : undefined,
   };
   const url = addQueryParams(
     buildApiUrl(
