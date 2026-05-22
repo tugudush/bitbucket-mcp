@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.2] - 2026-05-22
+
+### Fixed
+- **`bb_get_pull_request_diffstat` and `bb_get_diffstat` empty responses** — Replaced `createResponse` with `createDataResponse` so that structured data is returned even when no changes are found, resolving the "No structured data available" warning when using `output_format: "json"`
+- **`bb_get_pull_request_activity` invalid `pagelen` error** — Bitbucket Cloud enforces a maximum `pagelen` of 50 for the activity endpoint; now clamps the value server-side (`Math.min(pagelen, 50)`) to prevent 400 Bad Request errors when callers pass values up to 100
+
 ## [3.7.1] - 2026-04-29
 
 ### Changed
