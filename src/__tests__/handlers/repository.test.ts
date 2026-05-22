@@ -14,6 +14,7 @@ import {
   handleGetTag,
   handleGetBranch,
 } from '../../handlers/repository.js';
+import { BitbucketApiError } from '../../errors.js';
 
 // Mock the API module
 jest.mock('../../api.js', () => ({
@@ -209,13 +210,17 @@ describe('Repository Handlers', () => {
     });
 
     it('should browse subdirectory by resolving ref to commit SHA', async () => {
-      const mockCommitResponse = { hash: 'abc123' };
+      // Branch lookup returns the commit SHA via target.hash
+      const mockBranchResponse = {
+        name: 'feature/test',
+        target: { hash: 'abc123', date: '2024-01-01' },
+      };
       const mockDirResponse = {
         values: [{ type: 'commit_file', path: 'src/index.ts' }],
       };
 
       mockMakeRequest
-        .mockResolvedValueOnce(mockCommitResponse)
+        .mockResolvedValueOnce(mockBranchResponse)
         .mockResolvedValueOnce(mockDirResponse);
 
       const result = await handleBrowseRepository({
@@ -307,6 +312,119 @@ describe('Repository Handlers', () => {
       });
 
       expect(result.isError).toBeFalsy();
+    });
+
+    it('should resolve slash-containing branch via /refs/branches and read file by commit SHA', async () => {
+      const mockBranchData = {
+        name: 'feature/my-branch',
+        target: { hash: 'deadbeef1234', date: '2024-01-01' },
+      };
+      const mockFileContent = 'file content here';
+
+      mockMakeRequest.mockResolvedValueOnce(mockBranchData);
+      mockMakeTextRequest.mockResolvedValueOnce(mockFileContent);
+
+      const result = await handleGetFileContent({
+        workspace: 'workspace',
+        repo_slug: 'repo',
+        file_path: 'src/index.ts',
+        ref: 'feature/my-branch',
+      });
+
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('1: file content here');
+      // File must be fetched via commit SHA, not the encoded branch name
+      expect(mockMakeTextRequest).toHaveBeenCalledWith(
+        expect.stringContaining('/src/deadbeef1234/')
+      );
+      expect(mockMakeTextRequest).not.toHaveBeenCalledWith(
+        expect.stringContaining('feature%2F')
+      );
+    });
+
+    it('should resolve tag ref via /refs/tags when branch lookup returns 404', async () => {
+      const mockTagData = {
+        name: 'v1.0.0',
+        target: { hash: 'tagcommit123', date: '2024-01-01' },
+      };
+      const mockFileContent = 'tagged file content';
+
+      mockMakeRequest
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')) // branch not found
+        .mockResolvedValueOnce(mockTagData); // tag found
+      mockMakeTextRequest.mockResolvedValueOnce(mockFileContent);
+
+      const result = await handleGetFileContent({
+        workspace: 'workspace',
+        repo_slug: 'repo',
+        file_path: 'README.md',
+        ref: 'v1.0.0',
+      });
+
+      expect(result.isError).toBeFalsy();
+      expect(mockMakeTextRequest).toHaveBeenCalledWith(
+        expect.stringContaining('/src/tagcommit123/')
+      );
+    });
+
+    it('should rethrow non-404 resolution errors without falling back', async () => {
+      mockMakeRequest.mockRejectedValueOnce(
+        new BitbucketApiError(403, 'Forbidden', 'Access denied to repository')
+      );
+
+      await expect(
+        handleGetFileContent({
+          workspace: 'workspace',
+          repo_slug: 'repo',
+          file_path: 'secret.txt',
+          ref: 'main',
+        })
+      ).rejects.toThrow('403 Forbidden');
+
+      expect(mockMakeTextRequest).not.toHaveBeenCalled();
+    });
+
+    it('should throw targeted error for unresolvable slash-containing ref and not call makeTextRequest', async () => {
+      // All three resolution endpoints return 404
+      mockMakeRequest
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')) // branch
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')) // tag
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')); // commit
+
+      await expect(
+        handleGetFileContent({
+          workspace: 'workspace',
+          repo_slug: 'repo',
+          file_path: 'file.txt',
+          ref: 'feature/nonexistent',
+        })
+      ).rejects.toThrow('Could not resolve ref');
+
+      expect(mockMakeTextRequest).not.toHaveBeenCalled();
+    });
+
+    it('should resolve slash-containing branch for subdirectory via /refs/branches', async () => {
+      const mockBranchData = {
+        name: 'feature/my-branch',
+        target: { hash: 'deadbeef1234', date: '2024-01-01' },
+      };
+      const mockDirResponse = {
+        values: [{ type: 'commit_file', path: 'src/app.tsx' }],
+      };
+
+      mockMakeRequest
+        .mockResolvedValueOnce(mockBranchData) // branch lookup
+        .mockResolvedValueOnce(mockDirResponse); // directory listing
+
+      const result = await handleBrowseRepository({
+        workspace: 'workspace',
+        repo_slug: 'repo',
+        ref: 'feature/my-branch',
+        path: 'src',
+      });
+
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('📄 src/app.tsx');
     });
   });
 

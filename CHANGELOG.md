@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.3] - 2026-05-22
+
+### Fixed
+- **`bb_get_file_content` and `bb_browse_repository` ref resolution with slashes** — Fixed file content retrieval and subdirectory browsing for branch and tag names containing forward slashes (e.g., `feature/SSP-1024`). The server now systematically resolves references to a full Git commit SHA using `/refs/branches/` and `/refs/tags/` endpoints before retrieving files or folders, avoiding `404 Not Found - Commit not found` errors.
+- **Improved resolution fallback validation** — Added a strict guard where slash-containing refs that fail resolution do not fall back to the problematic direct `/src/` path, raising a clear, actionable custom `BitbucketApiError` to the host instead.
+- **Robust error preservation** — Only HTTP 404 responses are suppressed during reference resolution, ensuring authentication failures, rate-limiting, and server errors (like 401, 403, 429, 500) are correctly surfaced immediately.
+- **Regression test coverage** — Added thorough unit and integration test coverage for reference resolution, branch/tag resolution, and edge cases (increasing the test suite to 189 unit tests).
+
 ## [3.7.2] - 2026-05-22
 
 ### Fixed
