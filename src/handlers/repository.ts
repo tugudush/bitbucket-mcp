@@ -286,24 +286,39 @@ export async function handleBrowseRepository(
         `/repositories/${parsed.workspace}/${parsed.repo_slug}/src/${encodedRef}/${encodedPath}`
       );
     }
-    // Ensure trailing slash for directory browsing
-    if (!url.endsWith('/')) {
-      url += '/';
-    }
   } else {
     // For root directory, use /src?at={ref} pattern (works with branch names)
     url = buildApiUrl(
       `/repositories/${parsed.workspace}/${parsed.repo_slug}/src`
     );
-    // Ensure trailing slash for directory browsing
-    if (!url.endsWith('/')) {
-      url += '/';
-    }
     url += `?at=${encodeURIComponent(ref)}`;
   }
 
+  // For subdirectory paths, Bitbucket's URL convention differs between files and directories:
+  //   - directory: /src/{ref}/{path}/  → returns JSON paged listing
+  //   - file:      /src/{ref}/{path}   → returns raw file content (text/plain)
+  // Strategy: request JSON first; if the body is not JSON (i.e. it's the file content),
+  // fall back to fetching it as text and formatting it like bb_get_file_content.
   try {
-    const data = await makeRequest<BitbucketSrcListingResponse>(url);
+    let data: BitbucketSrcListingResponse;
+
+    if (path) {
+      // Subdirectory — try trailing-slash first for JSON listing
+      const dirUrl = url.endsWith('/') ? url : `${url}/`;
+      try {
+        data = await makeRequest<BitbucketSrcListingResponse>(dirUrl);
+      } catch (dirError) {
+        // If the trailing-slash request failed because the body was not JSON (file content)
+        // or because the path is a file (often returns 200 with text/plain), try as file.
+        if (dirError instanceof SyntaxError) {
+          return await fetchAndFormatFileContent(url, parsed, ref, dirError);
+        }
+        throw dirError;
+      }
+    } else {
+      // Root directory listing — query string already in URL
+      data = await makeRequest<BitbucketSrcListingResponse>(url);
+    }
 
     const limit = parsed.limit
       ? Math.min(parsed.limit, API_CONSTANTS.MAX_BROWSE_ITEMS)
@@ -328,6 +343,23 @@ export async function handleBrowseRepository(
     );
   } catch (error) {
     if (error instanceof BitbucketApiError && error.status === 404) {
+      // If the request 404'd and the path looks like a file, try fetching it as a file
+      // before surfacing the branch-not-found error. This is friendlier when callers
+      // point bb_browse_repository at a path that turns out to be a single file.
+      if (path) {
+        const looksLikeFile = /\.[A-Za-z0-9]{1,8}$/.test(path);
+        if (looksLikeFile) {
+          try {
+            return await fetchAndFormatFileContent(
+              url.replace(/\?.*$/, ''),
+              parsed,
+              ref
+            );
+          } catch {
+            // Fall through to the standard 404 error below.
+          }
+        }
+      }
       // Enhanced error message for branch/commit not found
       throw new BitbucketApiError(
         404,
@@ -338,6 +370,52 @@ export async function handleBrowseRepository(
     }
     throw error;
   }
+}
+
+/**
+ * Fetch a path as file content (text) and format it for display.
+ *
+ * Used by handleBrowseRepository when the requested path turns out to be a file
+ * (Bitbucket returned text/plain instead of a JSON directory listing).
+ */
+async function fetchAndFormatFileContent(
+  baseUrl: string,
+  parsed: { workspace: string; repo_slug: string; path?: string },
+  ref: string,
+  _origError?: unknown
+): Promise<ToolResponse> {
+  // `_origError` is intentionally unused — kept for future diagnostic logging.
+  void _origError;
+  // Trim any trailing slash and query string for a clean file URL
+  const fileUrl = baseUrl.replace(/\/+$/, '').replace(/\?.*$/, '');
+  const content = await makeTextRequest(fileUrl);
+
+  const lines = content.split('\n');
+  const start = 1;
+  const endLine = Math.min(
+    start + API_CONSTANTS.DEFAULT_FILE_LINES - 1,
+    lines.length
+  );
+  const paginatedLines = lines.slice(start - 1, endLine);
+
+  return createDataResponse(
+    `File: ${parsed.path} (lines ${start}-${endLine} of ${lines.length})\n` +
+      `Repository: ${parsed.workspace}/${parsed.repo_slug}\n` +
+      `Ref: ${ref}\n\n` +
+      `Note: bb_browse_repository detected this path is a file. Use bb_get_file_content for richer output.\n\n` +
+      paginatedLines
+        .map((line, index) => `${start + index}: ${line}`)
+        .join('\n'),
+    {
+      file_path: parsed.path,
+      ref,
+      total_lines: lines.length,
+      start,
+      end: endLine,
+      content,
+      hint: 'Use bb_get_file_content for full file reading functionality',
+    }
+  );
 }
 
 /**
