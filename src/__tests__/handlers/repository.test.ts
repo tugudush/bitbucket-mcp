@@ -254,6 +254,84 @@ describe('Repository Handlers', () => {
       expect(itemCount).toBe(50);
       expect(result.content[0].text).toContain('50 of 150');
     });
+
+    it('should fall back to file content when path points at a file (Bitbucket returned text instead of JSON)', async () => {
+      // resolveRefToCommitSha: branch lookup (HEAD → mainbranch resolved by caller)
+      const mockBranchResponse = {
+        name: 'main',
+        target: { hash: 'abc123', date: '2024-01-01' },
+      };
+      // Directory listing attempt throws SyntaxError (Bitbucket returned the file body as text/plain)
+      mockMakeRequest
+        .mockResolvedValueOnce(mockBranchResponse)
+        .mockImplementationOnce(() => {
+          throw new SyntaxError('Unexpected token in JSON at position 0');
+        });
+      // Fallback file content fetch
+      const mockFileContent = 'export const hello = "world";';
+      mockMakeTextRequest.mockResolvedValueOnce(mockFileContent);
+
+      const result = await handleBrowseRepository({
+        workspace: 'workspace',
+        repo_slug: 'repo',
+        ref: 'main',
+        path: 'src/index.ts',
+      });
+
+      expect(result.isError).toBeFalsy();
+      // Output should look like file content, not a directory listing
+      expect(result.content[0].text).toContain('File: src/index.ts');
+      expect(result.content[0].text).toContain(
+        '1: export const hello = "world";'
+      );
+      expect(result.content[0].text).not.toContain('📁');
+      expect(result.content[0].text).not.toContain('📄');
+      // Hint should point users at the dedicated tool
+      expect(result.content[0].text).toContain('bb_get_file_content');
+      // makeTextRequest must have been called to retrieve the file
+      expect(mockMakeTextRequest).toHaveBeenCalledTimes(1);
+    });
+
+    it('should fall back to file content with commit SHA ref', async () => {
+      // Caller passes a commit SHA directly; resolveRefToCommitSha tries branch → tag → commit
+      const mockCommitResponse = { hash: 'a1712220e0e0' };
+      const mockFileContent = 'console.log("hi");';
+      mockMakeRequest
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')) // branch lookup
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')) // tag lookup
+        .mockResolvedValueOnce(mockCommitResponse) // commit lookup
+        .mockImplementationOnce(() => {
+          throw new SyntaxError('Bad JSON');
+        });
+      mockMakeTextRequest.mockResolvedValueOnce(mockFileContent);
+
+      const result = await handleBrowseRepository({
+        workspace: 'workspace',
+        repo_slug: 'repo',
+        ref: 'a1712220e0e0',
+        path: 'src/app.ts',
+      });
+
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].text).toContain('1: console.log("hi");');
+    });
+
+    it('should surface "ref not found" when ref cannot be resolved and the ref contains a slash', async () => {
+      // resolveRefToCommitSha returns null (all 3 lookups 404)
+      mockMakeRequest
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')) // branch
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')) // tag
+        .mockRejectedValueOnce(new BitbucketApiError(404, 'Not Found')); // commit
+
+      await expect(
+        handleBrowseRepository({
+          workspace: 'workspace',
+          repo_slug: 'repo',
+          ref: 'feature/missing',
+          path: 'src',
+        })
+      ).rejects.toThrow(/Could not resolve ref 'feature\/missing'/);
+    });
   });
 
   describe('handleGetFileContent', () => {
